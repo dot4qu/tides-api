@@ -2,8 +2,10 @@
   "name": "tides-api",
   "version": "0.1.0",
   "description": "API layer between Surfline and requesting device",
-  "main": "server.js",
+  "main": "dist/server.js",
   "scripts": {
+    "build": "tsc",
+    "start": "nodemon .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -17,6 +19,9 @@
   },
   "homepage": "https://github.com/dot4qu/tides-api#readme",
   "dependencies": {
+    "nodemon": "^2.0.4",
+    "npm-run-script": "0.0.4",
+    "run-scripts": "^0.4.0",
     "typescript": "^3.9.6"
   }
 }
