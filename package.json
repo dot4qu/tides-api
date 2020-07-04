@@ -1,0 +1,22 @@
+{
+  "name": "tides-api",
+  "version": "0.1.0",
+  "description": "API layer between Surfline and requesting device",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dot4qu/tides-api.git"
+  },
+  "author": "Brian Team",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dot4qu/tides-api/issues"
+  },
+  "homepage": "https://github.com/dot4qu/tides-api#readme",
+  "dependencies": {
+    "typescript": "^3.9.6"
+  }
+}
