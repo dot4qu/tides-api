@@ -1,6 +1,6 @@
 interface TidesResponse {
-    error?: string;
-    message: string;
+    errorMessage?: string;
+    data: any;
 }
 
 interface SurflineSurfObject {
@@ -16,7 +16,7 @@ interface SurflineWaveResponse {
 }
 
 interface SurflineTidesResponse {
-    timestamp: number;
+    timestamp: number | Date;
     type: string;
     height: number;
 }
