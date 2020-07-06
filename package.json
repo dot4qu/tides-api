@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc",
     "start": "nodemon .",
+    "dev": "npm run build && npm start",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -19,6 +20,13 @@
   },
   "homepage": "https://github.com/dot4qu/tides-api#readme",
   "dependencies": {
+    "@types/body-parser": "^1.19.0",
+    "@types/express": "^4.17.6",
+    "@types/node-fetch": "^2.5.7",
+    "body-parser": "^1.19.0",
+    "express": "^4.17.1",
+    "http": "0.0.1-security",
+    "node-fetch": "^2.6.0",
     "nodemon": "^2.0.4",
     "npm-run-script": "0.0.4",
     "run-scripts": "^0.4.0",
