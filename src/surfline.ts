@@ -21,7 +21,7 @@ function getSurflineApiUrl(forecastType: SurflineForecastType, spotId: string, d
     let queryParams = `?spotId=${spotId}`;
     switch (forecastType) {
         case SurflineForecastType.WAVE:
-            queryParams += `&days=${days}&intervalHours=6&maxHeights=true`;
+            queryParams += `&days=${days}&intervalHours=6&maxHeights=false`;
         break;
         case SurflineForecastType.TIDES:
             queryParams += `&days=${days}`;
@@ -43,9 +43,9 @@ export async function getTides(spotId: string = PACIFICA_SPOT_ID, days: number =
     return response.data.tides!;
 }
 
-export async function getWaves(spotId: string = PACIFICA_SPOT_ID): Promise<SurflineBaseDataObject> {
-    const url = getSurflineApiUrl(SurflineForecastType.WAVE, spotId);
+export async function getWaves(spotId: string = PACIFICA_SPOT_ID, days: number = 3): Promise<SurflineWaveResponse[]> {
+    const url = getSurflineApiUrl(SurflineForecastType.WAVE, spotId, days);
     const unparsedRes = await fetch(url);
     const response: SurflineBaseApiResponse = await unparsedRes.json();
-    return response.data;
+    return response.data.wave!!;
 }

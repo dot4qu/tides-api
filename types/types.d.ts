@@ -10,9 +10,9 @@ interface SurflineSurfObject {
 }
 
 interface SurflineWaveResponse {
-    timestamp: number;
+    timestamp: number | Date;
     swells: any[];
-    surf: SurflineSurfObject[];
+    surf: SurflineSurfObject;
 }
 
 interface SurflineTidesResponse {
