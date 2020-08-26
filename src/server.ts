@@ -7,7 +7,6 @@ import router from "./routes";
 import { twoDigits } from "./helpers";
 
 const app = express();
-app.use(bodyParser.json());
 
 app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
     const now = new Date();
@@ -15,7 +14,8 @@ app.use((req: express.Request, res: express.Response, next: express.NextFunction
     next();
 });
 
+app.use(bodyParser.json());
 app.use(router());
 
 const httpServer = http.createServer(app);
-httpServer.listen(80);
+httpServer.listen(9080);
