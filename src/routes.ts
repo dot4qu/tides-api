@@ -8,16 +8,17 @@ export default function(): express.Router {
     const router = Router();
 
     router.get("/tides", async (req: express.Request, res: express.Response) => {
-        let spotId: string | undefined = undefined;
-        if (req.query.spot_name) {
-            const spotNameUppercase: string = (req.query.spot_name as string).toUpperCase();
-            if (surfline.SPOT_IDS_BY_NAME.hasOwnProperty(spotNameUppercase)) {
-                spotId = surfline.SPOT_IDS_BY_NAME[spotNameUppercase];
-            }
-        }
-
         const days = req.query.days as unknown as number;
-        const rawTides: SurflineTidesResponse[] = await surfline.getTides(spotId, days);
+
+        let rawTides: SurflineTidesResponse[] = []
+        if (req.query.spot_id) {
+            const spotId = req.query.spot_id as unknown as string;
+            rawTides = await surfline.getTidesBySpotId(spotId, days);
+
+        } else if (req.query.spot_name) {
+            const spotName = req.query.spot_name as unknown as string;
+            rawTides = await surfline.getTidesBySpotName(spotName, days);
+        }
 
         // Group tides by day sorted in time-order within each day
         // Should come sorted from server but do it anyway
@@ -49,16 +50,26 @@ export default function(): express.Router {
     });
 
     router.get("/swell", async (req: express.Request, res: express.Response) => {
-        let spotId: string | undefined = undefined;
-        if (req.query.spot_name) {
-            const spotNameUppercase: string = (req.query.spot_name as string).toUpperCase();
-            if (surfline.SPOT_IDS_BY_NAME.hasOwnProperty(spotNameUppercase)) {
-                spotId = surfline.SPOT_IDS_BY_NAME[spotNameUppercase];
-            }
+        const days = req.query.days as unknown as number;
+        // let spotId: string | undefined = undefined;
+        // if (req.query.spot_name) {
+        //     const spotNameUppercase: string = (req.query.spot_name as string).toUpperCase();
+        //     if (surfline.SPOT_IDS_BY_NAME.hasOwnProperty(spotNameUppercase)) {
+        //         spotId = surfline.SPOT_IDS_BY_NAME[spotNameUppercase];
+        //     }
+        // }
+
+        let rawSwell: SurflineWaveResponse[] = []
+        if (req.query.spot_id) {
+            const spotId = req.query.spot_id as unknown as string;
+            rawSwell = await surfline.getWavesBySpotId(spotId, days);
+
+        } else if (req.query.spot_name) {
+            const spotName = req.query.spot_name as unknown as string;
+            rawSwell = await surfline.getWavesBySpotName(spotName, days);
         }
 
-        const days = req.query.days as unknown as number;
-        const rawSwell: SurflineWaveResponse[] = await surfline.getWaves(spotId, days);
+        // const rawSwell: SurflineWaveResponse[] = await surfline.getWaves(spotId, days);
         const parsedSwell: { [key: number]: SurflineWaveResponse[] } = rawSwell
             .sort((a, b) => (a.timestamp as number) - (b.timestamp as number))
             .reduce((aggregate: { [key: number]: SurflineWaveResponse[] }, element: SurflineWaveResponse) => {
