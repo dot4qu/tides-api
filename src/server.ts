@@ -18,6 +18,11 @@ app.use((req: express.Request, res: express.Response, next: express.NextFunction
 app.use(bodyParser.json());
 app.use(router());
 
+if (!process.env.OPENWEATHERMAP_API_KEY) {
+    console.log("No OpenWeatherMap API key env variable set, did you source setup_env.sh?");
+    process.exit(1);
+}
+
 // HTTPS certs
 let creds = {};
 if (process.env.DEPLOY_STAGE === "PROD") {

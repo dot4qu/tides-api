@@ -31,3 +31,29 @@ interface SurflineBaseApiResponse {
     associated: any;
     data: SurflineBaseDataObject
 }
+
+interface OpenWeatherMapWeatherObject {
+    temp: number;
+    feels_like: number;
+    temp_min: number;
+    temp_max: number;
+    pressure: number;
+    humidity: number;
+}
+
+interface OpenWeatherMapResponse {
+    coord: any;
+    weather: any;
+    base: string;
+    main: OpenWeatherMapWeatherObject;
+    visibility: number;
+    wind: any;
+    clouds: any;
+    dt: string;
+    sys: any;
+    timezone: number;
+    id: number;
+    name: string;
+    cod: number;
+    message: string;        // Only sent in the case that 'cod' is an error code
+}

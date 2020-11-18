@@ -1,5 +1,6 @@
 import express from "express";
 import { Router } from "express";
+import fetch from "node-fetch";
 
 import * as surfline from "./surfline";
 import { epochSecondsToDate, MONTHS, buildTideString, buildSwellString } from "./helpers";
@@ -96,6 +97,39 @@ export default function(): express.Router {
         const responseObj: TidesResponse = {
             errorMessage: undefined,
             data: swellStrings
+        };
+
+        return res.json(responseObj);
+    });
+
+    router.get("/weather", async (req: express.Request, res: express.Response) => {
+        const latitude: number = req.query.lat as unknown as number;
+        const longitude: number = req.query.lon as unknown as number;
+
+        if (!latitude || !longitude) {
+            console.log(`Received weather request with missing lat or lon (${req.query.lat} - ${req.query.lon})`);
+            res.status(400).send();
+            return;
+        }
+
+        const unparsedRes = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=90588fb9a78661c1b8828a5e2cff675d&units=imperial`)
+        const weatherResponse: OpenWeatherMapResponse = await unparsedRes.json();
+        if (weatherResponse.cod as number >= 400) {
+            console.log(`Recieved ${weatherResponse.cod} from external weather api`);
+            const errorJson: TidesResponse = {
+                errorMessage: weatherResponse.message,
+                data: undefined
+            };
+
+            return res.status(weatherResponse.cod as number).json(errorJson);
+        }
+
+        const responseObj: TidesResponse = {
+            errorMessage: undefined,
+            data: {
+                // We don't want A) our embedded code to have to deal with floating point and B) to show the user fractional degrees
+                temp: Math.round(weatherResponse.main.temp)
+            }
         };
 
         return res.json(responseObj);
