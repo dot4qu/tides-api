@@ -112,7 +112,7 @@ export default function(): express.Router {
             return;
         }
 
-        const unparsedRes = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=90588fb9a78661c1b8828a5e2cff675d&units=imperial`)
+        const unparsedRes = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${process.env.OPENWEATHERMAP_API_KEY}&units=imperial`)
         const weatherResponse: OpenWeatherMapResponse = await unparsedRes.json();
         if (weatherResponse.cod as number >= 400) {
             console.log(`Recieved ${weatherResponse.cod} from external weather api`);
