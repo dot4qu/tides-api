@@ -17,7 +17,8 @@ export default function(): express.Router {
   router.get("/tides", async (req: express.Request, res: express.Response) => {
     const days = req.query.days as unknown as number;
 
-    let rawTides: SurflineTidesResponse[] = [] if (req.query.spot_id) {
+    let rawTides: SurflineTidesResponse[] = [];
+    if (req.query.spot_id) {
       const spotId = req.query.spot_id as unknown as string;
       rawTides = await surfline.getTidesBySpotId(spotId, days);
     }
@@ -69,7 +70,8 @@ export default function(): express.Router {
     //     }
     // }
 
-    let rawSwell: SurflineWaveResponse[] = [] if (req.query.spot_id) {
+    let rawSwell: SurflineWaveResponse[] = [];
+    if (req.query.spot_id) {
       const spotId = req.query.spot_id as unknown as string;
       rawSwell = await surfline.getWavesBySpotId(spotId, days);
     }
@@ -142,7 +144,7 @@ export default function(): express.Router {
       return res.status(weatherResponse.cod as number).json(errorJson);
     }
 
-    let windDirStr: string = degreesToDirStr(weatherResponse.wind.dir);
+    let windDirStr: string = degreesToDirStr(weatherResponse.wind.deg);
 
     // We don't want A) our embedded code to have to deal with floating point
     // and B) to show the user fractional degrees/mph, so round temp and
