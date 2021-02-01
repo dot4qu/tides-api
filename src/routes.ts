@@ -102,7 +102,7 @@ export default function(): express.Router {
         return res.json(responseObj);
     });
 
-    router.get("/weather", async (req: express.Request, res: express.Response) => {
+    router.get("/conditions", async (req: express.Request, res: express.Response) => {
         const latitude: number = req.query.lat as unknown as number;
         const longitude: number = req.query.lon as unknown as number;
 
@@ -124,11 +124,14 @@ export default function(): express.Router {
             return res.status(weatherResponse.cod as number).json(errorJson);
         }
 
+        // We don't want A) our embedded code to have to deal with floating point and B) to show the user fractional degrees/mph, so round temp and wind_speed and cast tide as string
         const responseObj: TidesResponse = {
             errorMessage: undefined,
             data: {
-                // We don't want A) our embedded code to have to deal with floating point and B) to show the user fractional degrees
-                temp: Math.round(weatherResponse.main.temp)
+                temp: Math.round(weatherResponse.main.temp),
+                wind_speed: Math.round(weatherResponse.wind.speed),
+                wind_dir: weatherResponse.wind.deg as string,
+                tide_height: -1.3 as unknown as string
             }
         };
 
