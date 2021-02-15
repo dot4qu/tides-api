@@ -121,6 +121,7 @@ export default function(): express.Router {
                                    res: express.Response) => {
     const latitude: number = req.query.lat as unknown as number;
     const longitude: number = req.query.lon as unknown as number;
+    const spotId: string = req.query.spot_id as unknown as string;
 
     if (!latitude || !longitude) {
       console.log(`Received weather request with missing lat or lon (${
@@ -129,11 +130,19 @@ export default function(): express.Router {
       return;
     }
 
-    const unparsedRes =
-        await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${
+    const weatherReq =
+        fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${
             latitude}&lon=${longitude}&appid=${
             process.env.OPENWEATHERMAP_API_KEY}&units=imperial`)
-    const weatherResponse: OpenWeatherMapResponse = await unparsedRes.json();
+    let tidesResPromise: Promise<SurflineTidesResponse[]>;
+    if (spotId && spotId !== "") {
+        tidesResPromise  =  surfline.getTidesBySpotId(spotId, 1);
+    } else {
+        tidesResPromise = Promise.resolve([]);
+    }
+
+    const results = await Promise.all([weatherReq, tidesResPromise]);
+    const weatherResponse: OpenWeatherMapResponse = await results[0].json();
     if (weatherResponse.cod as number >= 400) {
       console.log(`Recieved ${weatherResponse.cod} from external weather api`);
       const errorJson: TidesResponse = {
@@ -143,6 +152,32 @@ export default function(): express.Router {
 
       return res.status(weatherResponse.cod as number).json(errorJson);
     }
+    
+    // Zero out now so we match a tide time exactly. Divide by 1000 to switch to seconds
+    // which is the epoch format surfline serves them in.
+    //Rounds down for hours for now but can be tweaked to go up or down based on minute
+    const nowDate = new Date();
+    nowDate.setMinutes(0, 0, 0);
+    const now = nowDate.getTime() / 1000;
+
+    let tideHeight;
+    if (results[1].length > 0) {
+        try {
+            const matchingTimes = results[1].filter(x => x && x.timestamp === now);
+            if (matchingTimes.length > 0) {
+                tideHeight = matchingTimes[0].height.toString();
+            } else {
+                console.error(`Had list of tides but rounded now epoch didn't match any. Checking with epoch ${now}`);
+                tideHeight = "-99";
+            }
+        } catch (e) {
+            console.error(e);
+            console.error(`Didn't find a matching tide time when getting conditions. Checking with epoch ${now}`);
+            tideHeight = "-99";
+        }
+    } else {
+        tideHeight = "-99";
+    }
 
     let windDirStr: string = degreesToDirStr(weatherResponse.wind.deg);
 
@@ -150,13 +185,13 @@ export default function(): express.Router {
     // and B) to show the user fractional degrees/mph, so round temp and
     // wind_speed and cast tide as string
     const responseObj: TidesResponse = {
-      errorMessage : undefined,
-      data : {
-        temp : Math.round(weatherResponse.main.temp),
-        wind_speed : Math.round(weatherResponse.wind.speed),
-        wind_dir : windDirStr,
-        tide_height : -1.3 as unknown as string
-      }
+        errorMessage : undefined,
+        data : {
+            temp : Math.round(weatherResponse.main.temp),
+            wind_speed : Math.round(weatherResponse.wind.speed),
+            wind_dir : windDirStr,
+            tide_height : tideHeight
+        }
     };
 
     return res.json(responseObj);

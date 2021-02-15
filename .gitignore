@@ -6,3 +6,5 @@ dist/
 setup_env.sh
 
 *.pem
+
+*.swp
