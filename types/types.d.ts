@@ -10,13 +10,13 @@ interface SurflineSurfObject {
 }
 
 interface SurflineWaveResponse {
-    timestamp: number | Date;
+    timestamp: number|Date;
     swells: any[];
     surf: SurflineSurfObject;
 }
 
 interface SurflineTidesResponse {
-    timestamp: number | Date;
+    timestamp: number|Date;
     type: string;
     height: number;
 }
@@ -55,12 +55,12 @@ interface OpenWeatherMapResponse {
     id: number;
     name: string;
     cod: number;
-    message: string;        // Only sent in the case that 'cod' is an error code
+    message: string;  // Only sent in the case that 'cod' is an error code
 }
 
 interface VersionRequest {
     current_version: string;
-};
+}
 
 interface VersionResponse {
     server_version: string;
