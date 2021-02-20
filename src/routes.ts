@@ -3,10 +3,11 @@ import {Router} from "express";
 import fs from 'fs';
 import fetch from "node-fetch";
 
-const fsPromises = fs.promises;
-
-import {buildSwellString, buildTideString, epochSecondsToDate, degreesToDirStr, MONTHS} from "./helpers";
+import {buildSwellString, buildTideString, degreesToDirStr, epochSecondsToDate, MONTHS} from "./helpers";
 import * as surfline from "./surfline";
+
+const fsPromises      = fs.promises;
+const versionFilePath = "./fw_versions";
 
 export default function(): express.Router {
     const router = Router();
@@ -181,7 +182,7 @@ export default function(): express.Router {
         const reqBody: VersionRequest = req.body as VersionRequest;
         let                                      versionFile;
         try {
-            versionFile = await fsPromises.readFile("current_version.txt");
+            versionFile = await fsPromises.readFile(`${versionFilePath}/current_version.txt`);
         } catch (e) {
             console.error("Error opening current_version text file: ");
             console.error(e);
@@ -200,6 +201,57 @@ export default function(): express.Router {
         };
 
         return res.json(retVal);
+    });
+
+    router.get("/ota/get_binary", async (req: express.Request, res: express.Response) => {
+        let binaryPath = undefined;
+        if (req.query.version) {
+            const queryStr: string = req.query.version as string;
+            // TODO :: regex validate this (or check from known available versions)
+
+            const requestedVersionNumberStrs: string[] = queryStr.split(".");
+            const requestedBinaryPath = `${versionFilePath}/spot-check-embedded-${requestedVersionNumberStrs[0]}-${
+                requestedVersionNumberStrs[1]}-${requestedVersionNumberStrs[2]}.bin`;
+
+            try {
+                await fsPromises.access(requestedBinaryPath);
+                binaryPath = requestedBinaryPath;
+            } catch (e) {
+                console.error(`Received request for binary version ${queryStr} but don't have matching filepath ${
+                    requestedBinaryPath}, falling back to current version`);
+                binaryPath = undefined;
+            }
+        }
+
+        // If they didn'trequest a specific version or if we didn't have the binary they requested
+        if (!binaryPath) {
+            // Get most current version first
+            let versionFile;
+            try {
+                versionFile = await fsPromises.readFile(`${versionFilePath}/current_version.txt`);
+            } catch (e) {
+                console.error("Error opening current_version text file: ");
+                console.error(e);
+                return res.status(503).send();
+            }
+
+            const currentVersionNumberStrs: string[] = versionFile.toString().trim().split(".");
+            const currentBinaryPath = `${versionFilePath}/spot-check-embedded-${currentVersionNumberStrs[0]}-${
+                currentVersionNumberStrs[1]}-${currentVersionNumberStrs[2]}.bin`;
+
+            try {
+                // if this fails, somethings messed up on the server side and we're missing a binary
+                await fsPromises.access(currentBinaryPath);
+                binaryPath = currentBinaryPath;
+            } catch (e) {
+                // TODO :: try to find the most recent good binary we have access to here
+                console.error(`Received ota binary request but don't have matching binary filepath ${
+                    currentBinaryPath} in current_version file, unrecoverable.`);
+                return res.status(503).send();
+            }
+        }
+
+        res.sendFile(binaryPath, {root : `${__dirname}/..`});
     });
 
     return router;
