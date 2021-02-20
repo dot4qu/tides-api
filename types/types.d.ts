@@ -57,3 +57,12 @@ interface OpenWeatherMapResponse {
     cod: number;
     message: string;        // Only sent in the case that 'cod' is an error code
 }
+
+interface VersionRequest {
+    current_version: string;
+};
+
+interface VersionResponse {
+    server_version: string;
+    needs_update: bool;
+}

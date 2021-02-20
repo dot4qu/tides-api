@@ -1,6 +1,9 @@
 import express from "express";
 import {Router} from "express";
 import fetch from "node-fetch";
+import fs from 'fs';
+
+const fsPromises = fs.promises;
 
 import {
   buildSwellString,
@@ -13,6 +16,10 @@ import * as surfline from "./surfline";
 
 export default function(): express.Router {
   const router = Router();
+
+  router.get("/health", (req: express.Request, res: express.Response) => {
+    return res.send("surviving not thriving");
+  });
 
   router.get("/tides", async (req: express.Request, res: express.Response) => {
     const days = req.query.days as unknown as number;
@@ -61,14 +68,6 @@ export default function(): express.Router {
 
   router.get("/swell", async (req: express.Request, res: express.Response) => {
     const days = req.query.days as unknown as number;
-    // let spotId: string | undefined = undefined;
-    // if (req.query.spot_name) {
-    //     const spotNameUppercase: string = (req.query.spot_name as
-    //     string).toUpperCase(); if
-    //     (surfline.SPOT_IDS_BY_NAME.hasOwnProperty(spotNameUppercase)) {
-    //         spotId = surfline.SPOT_IDS_BY_NAME[spotNameUppercase];
-    //     }
-    // }
 
     let rawSwell: SurflineWaveResponse[] = [];
     if (req.query.spot_id) {
@@ -195,6 +194,36 @@ export default function(): express.Router {
     };
 
     return res.json(responseObj);
+  });
+
+  router.post("/version_info", async (req: express.Request, res: express.Response) => {
+    if (!req.body || !req.body.current_version) {
+        // Unproccessable Entity
+        console.error("Received POST for version info with either no body or no 'current_version' key sending 422. Body:");
+        console.error(req.body);
+        return res.status(422).send();
+    }
+
+    const reqBody: VersionRequest = req.body as VersionRequest;
+    let versionFile;
+    try {
+        versionFile = await fsPromises.readFile("current_version.txt");
+    } catch (e) {
+        console.error("Error opening current_version text file: ");
+        console.error(e);
+        return res.status(503);
+    }
+
+    const versionStr: string = versionFile.toString().trim();
+    if (reqBody.current_version > versionStr) {
+        console.log(`Received version check POST with FW current version > version stored in server version.txt. received: ${reqBody.current_version}, server: ${versionStr}`)
+    }
+    const retVal: VersionResponse = {
+        server_version: versionStr,
+        needs_update: reqBody.current_version != undefined && reqBody.current_version < versionStr,
+    };
+
+    return res.json(retVal);
   });
 
   return router;
