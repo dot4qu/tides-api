@@ -1,13 +1,13 @@
 import bodyParser from "body-parser";
 import express from "express";
 import fs from "fs";
-import http from "http";
 import https from "https";
 
 import {twoDigits} from "./helpers";
 import router from "./routes";
 
-const app = express();
+const app  = express();
+const port = 9443;
 
 app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
     const now = new Date();
@@ -51,6 +51,5 @@ if (process.env.DEPLOY_STAGE === "PROD") {
 }
 
 const httpsServer = https.createServer(creds, app);
-const httpServer  = http.createServer(app);
-httpsServer.listen(9443);
-httpServer.listen(9080);
+httpsServer.listen(port);
+console.log(`Server running on port ${port}`);
