@@ -170,7 +170,7 @@ export default function(): express.Router {
         return res.json(responseObj);
     });
 
-    router.post("/version_info", async (req: express.Request, res: express.Response) => {
+    router.post("/ota/version_info", async (req: express.Request, res: express.Response) => {
         if (!req.body || !req.body.current_version) {
             // Unproccessable Entity
             console.error(
