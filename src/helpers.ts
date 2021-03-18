@@ -43,6 +43,14 @@ export function twoDigits(num: number) {
     return ("0" + num).slice(-2)
 }
 
+// Rounds anything longer than 1 decimal to one decimal. Leaves numbers w/o decimals untouched. Note use of "+" on front
+// to coerce back to number
+export function roundToMaxSingleDecimal(num: number) {
+    const numStr: string   = num.toString() + "e+1";
+    const numFloat: number = parseFloat(numStr);
+    return +(Math.round(numFloat) + "e-1");
+}
+
 export function degreesToDirStr(deg: number) {
     if (deg > 338 && deg <= 23) {
         return "N";

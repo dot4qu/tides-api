@@ -3,7 +3,14 @@ import {Router} from "express";
 import fs from 'fs';
 import fetch from "node-fetch";
 
-import {buildSwellString, buildTideString, degreesToDirStr, epochSecondsToDate, MONTHS} from "./helpers";
+import {
+    buildSwellString,
+    buildTideString,
+    degreesToDirStr,
+    epochSecondsToDate,
+    MONTHS,
+    roundToMaxSingleDecimal,
+} from "./helpers";
 import * as surfline from "./surfline";
 
 const fsPromises      = fs.promises;
@@ -137,7 +144,7 @@ export default function(): express.Router {
             try {
                 const matchingTimes = results[1].filter(x => x && x.timestamp === now);
                 if (matchingTimes.length > 0) {
-                    tideHeight = matchingTimes[0].height.toString();
+                    tideHeight = roundToMaxSingleDecimal(matchingTimes[0].height).toString();
                 } else {
                     console.error(
                         `Had list of tides but rounded now epoch didn't match any. Checking with epoch ${now}`);
