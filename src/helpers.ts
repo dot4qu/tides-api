@@ -52,7 +52,7 @@ export function roundToMaxSingleDecimal(num: number) {
 }
 
 export function degreesToDirStr(deg: number) {
-    if (deg > 338 && deg <= 23) {
+    if ((deg > 338 && deg <= 359) || (deg >= 0 && deg <= 23)) {
         return "N";
     } else if (deg > 23 && deg <= 68) {
         return "NW";
