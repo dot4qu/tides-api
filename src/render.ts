@@ -10,7 +10,19 @@ export const rendersDir: string = "temp_renders";
  * Weights them all (almost) equally which isn't how the eye perceives them but this is fine
  */
 function convert24BitTo8Bit(r: number, b: number, g: number): number {
-    return (r * 7 / 255) << 5 + (b * 7 / 255) << 3 + (g * 7 / 255);
+    if (r > 255) {
+        r = 255;
+    }
+    if (g > 255) {
+        g = 255;
+    }
+    if (b > 255) {
+        b = 255;
+    }
+
+    const output = (((r * 7 / 255) & 0x7) << 5) + (((b * 7 / 255) & 0x7) << 2) + ((g * 7 / 255) & 0x3);
+    // console.log(`Converted ${r},${g},${b} to ${output}`);
+    return output;
 }
 
 export function renderScreenFromData(text: string): string {
