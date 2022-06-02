@@ -11,6 +11,7 @@ import {
     MONTHS,
     roundToMaxSingleDecimal,
 } from "./helpers";
+import * as render   from "./render";
 import * as surfline from "./surfline";
 
 const fsPromises      = fs.promises;
@@ -19,9 +20,8 @@ const versionFilePath = "./fw_versions";
 export default function(): express.Router {
     const router = Router();
 
-    router.get("/health", (req: express.Request, res: express.Response) => {
-        return res.send("surviving not thriving");
-    });
+    router.get("/health",
+               (req: express.Request, res: express.Response) => { return res.send("surviving not thriving"); });
 
     router.get("/tides", async (req: express.Request, res: express.Response) => {
         const days = req.query.days as unknown as number;
@@ -259,6 +259,17 @@ export default function(): express.Router {
         }
 
         res.sendFile(binaryPath, {root : `${__dirname}/..`});
+    });
+
+    router.get("/test_image", async (req: express.Request, res: express.Response) => {
+        // let text: string = req.query.text as string;
+        // if (!text) {
+        //     text = "shakamahalo";
+        // }
+
+        const renderFilename: string = render.renderSmolImage();
+        // const renderFilename: string = render.renderScreenFromData(text);
+        res.sendFile(renderFilename, {root : `${__dirname}/../${render.rendersDir}`});
     });
 
     return router;
