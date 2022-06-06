@@ -269,7 +269,7 @@ export default function(): express.Router {
 
         const renderFilename: string = render.renderSmolImage();
         // const renderFilename: string = render.renderScreenFromData(text);
-        res.sendFile(renderFilename, {root : `${__dirname}/../${render.rendersDir}`});
+        res.download(`${__dirname}/../${render.rendersDir}/${renderFilename}`, "default_name_img.jpeg");
     });
 
     return router;
