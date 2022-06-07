@@ -1,5 +1,7 @@
 import fetch from "node-fetch";
 
+import {epochSecondsToDate} from "./helpers";
+
 enum SurflineForecastType {
     WAVE     = "wave",
     TIDES    = "tides",
@@ -21,7 +23,7 @@ function getSurflineApiUrl(forecastType: SurflineForecastType, spotId: string, d
     let queryParams = `?spotId=${spotId}`;
     switch (forecastType) {
         case SurflineForecastType.WAVE:
-            queryParams += `&days=${days}&intervalHours=6&maxHeights=false`;
+            queryParams += `&days=${days}&intervalHours=8&maxHeights=false`;
             break;
         case SurflineForecastType.TIDES:
             queryParams += `&days=${days}`;
@@ -70,4 +72,30 @@ export async function getWavesBySpotId(spotId: string, days: number = 3): Promis
     const unparsedRes                       = await                       fetch(url);
     const response: SurflineBaseApiResponse = await unparsedRes.json();
     return response.data.wave!!;
+}
+
+export function parseSwell(rawSwell: SurflineWaveResponse[]): {[key: number]: SurflineWaveResponse[]} {
+    const parsedSwell: {[key: number]: SurflineWaveResponse[]} =
+        rawSwell.sort((a, b) => (a.timestamp as number) - (b.timestamp as number))
+            .reduce((aggregate: {[key: number]: SurflineWaveResponse[]}, element: SurflineWaveResponse) => {
+                // We don't care about anything between 9:01pm and 2:59am
+                // This only drops the midnight entry for 6-hour intervals
+                // but can be more effective on smaller interval ranges
+                const date = epochSecondsToDate(element.timestamp as number);
+                if (date.getHours() < 3 || date.getHours() > 21) {
+                    return aggregate;
+                }
+
+                // Overwrite epoch timestamp with parsed date
+                element.timestamp = date;
+                const day         = date.getDate() as number;
+                if (aggregate[day]) {
+                    aggregate[day].push(element);
+                } else {
+                    aggregate[day] = [ element ];
+                }
+                return aggregate;
+            }, {});
+
+    return parsedSwell;
 }

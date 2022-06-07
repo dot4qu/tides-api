@@ -11,3 +11,8 @@ setup_env.sh
 
 *.bin
 *.DS_Store
+
+*.jpeg
+*.jpg
+*.png
+*.raw

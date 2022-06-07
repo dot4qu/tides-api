@@ -66,3 +66,8 @@ interface VersionResponse {
     server_version: string;
     needs_update: bool;
 }
+
+interface CurrentTide {
+    height: number;
+    rising: boolean;
+}
