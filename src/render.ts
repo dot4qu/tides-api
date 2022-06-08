@@ -1,6 +1,7 @@
 import {createCanvas} from "canvas";
 import fs from "fs";
 import moment from "moment";
+const plotly = require("plotly")("second.string", "ECFumSwhQNCSasct0Owv");
 
 import {buildSwellString, buildTideString, getTideExtremes, SpotCheckRevision} from "./helpers";
 
@@ -119,4 +120,59 @@ export function renderSmolImage(): string {
     fs.writeFileSync(rendersDir + '/smol_render.jpeg', jpegBuffer);
     fs.writeFileSync(rendersDir + '/smol_render.raw', Buffer.from(raw8BitBuffer));
     return 'smol_render.jpeg';
+}
+
+export function renderTideChart(rawTides: SurflineTidesResponse[]): Promise<string> {
+    // Switch timestamps received from server to moment objects
+    rawTides.forEach(x => x.timestamp = moment((x.timestamp as number) * 1000))
+
+    const todaysDate = moment().dayOfYear();
+    const todaysTides =
+        rawTides.sort(x => x.timestamp.valueOf()).filter(x => (x.timestamp as moment.Moment).dayOfYear() == todaysDate);
+    let tideTrace = {
+        x : todaysTides.map(x => (x.timestamp as moment.Moment).hour() + (x.timestamp as moment.Moment).minute() / 60),
+        y : todaysTides.map(x => x.height),
+        mode : 'lines',
+        name : 'Tides',
+        line : {
+            shape : 'spline',
+            smoothing : 1.3,  // apparently 1.3 is highest value...? Defaults to smoothest if ommitted as well
+        },
+        type : 'scatter',
+        labels : {y : "Tide height (ft.)"},
+    };
+
+    const figure = {
+        data : [ tideTrace ],
+        layout : {
+            xaxis : {
+                autotick : false,
+                ticks : "outside",
+                tick0 : moment((todaysTides[0].timestamp as number) * 1000).hour(),
+                dtick : 1.0,
+            },
+        }
+    };
+
+    const imgOptions = {
+        format : "jpeg",
+        width : 1200,
+        height : 600,
+    };
+
+    const plotlyPromise = new Promise<string>((resolve, reject) => {
+        plotly.getImage(figure, imgOptions, (err: Error, imageStream: NodeJS.ReadableStream) => {
+            if (err) {
+                console.error(err);
+                return reject(err);
+            }
+
+            const filename        = "test_tide_chart.jpeg";
+            const chartFileStream = fs.createWriteStream(`${__dirname}/../${rendersDir}/${filename}`);
+            imageStream.pipe(chartFileStream);
+            return resolve(filename);
+        });
+    });
+
+    return plotlyPromise;
 }

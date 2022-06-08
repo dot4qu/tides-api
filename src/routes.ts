@@ -267,5 +267,30 @@ export default function(): express.Router {
         res.download(`${__dirname}/../${render.rendersDir}/${renderFilename}`, "default_name_img.jpeg");
     });
 
+    router.get("/tides_graph", async (req: express.Request, res: express.Response) => {
+        let latitude: number  = req.query.lat as unknown as number;
+        let longitude: number = req.query.lon as unknown as number;
+        let spotId: string    = req.query.spot_id as unknown as string;
+        if (!latitude) {
+            latitude = 37.7500186826;
+        }
+        if (!longitude) {
+            longitude = -122.5116348267;
+        }
+        if (!spotId) {
+            spotId = "58bdda3582d034001252e3d0";
+        }
+
+        // Current tide height from surfline
+        const rawTides = await surfline.getTidesBySpotId(spotId, 1);
+        try {
+            render.renderTideChart(rawTides);
+        } catch (e) {
+            return res.status(500).send("Failed to generate tide chart");
+        }
+
+        return res.status(200).send();
+    });
+
     return router;
 }

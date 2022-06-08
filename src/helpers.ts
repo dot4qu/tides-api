@@ -195,11 +195,11 @@ export function getTideExtremes(rawTides: SurflineTidesResponse[]): {[key: numbe
         rawTides.filter(x => x.type == "HIGH" || x.type == "LOW")
             .sort((a, b) => (a.timestamp as number) - (b.timestamp as number))
             .reduce((aggregate: {[key: number]: SurflineTidesResponse[]}, element: SurflineTidesResponse) => {
-                const date = epochSecondsToDate(element.timestamp as number);
+                const date = moment(element.timestamp as number * 1000);
 
                 // Overwrite epoch timestamp with parsed date
                 element.timestamp = date;
-                const day         = date.getDate() as number;
+                const day         = date.date() as number;
                 if (aggregate[day]) {
                     aggregate[day].push(element);
                 } else {
