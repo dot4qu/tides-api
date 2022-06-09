@@ -256,13 +256,13 @@ export default function(): express.Router {
         const parsedSwell: {[key: number]: SurflineWaveResponse[]} = surfline.parseSwell(rawSwell);
 
         // Render all info into screen
-        const renderFilename: string = render.renderScreenFromData(weatherResponse.data.temperature,
-                                                                   weatherResponse.data.wind.speed,
-                                                                   windDirStr,
-                                                                   currentTideObj.height,
-                                                                   currentTideObj.rising,
-                                                                   rawTides,
-                                                                   Object.values(parsedSwell)[0]);
+        const renderFilename: string = await render.renderScreenFromData(weatherResponse.data.temperature,
+                                                                         weatherResponse.data.wind.speed,
+                                                                         windDirStr,
+                                                                         currentTideObj.height,
+                                                                         currentTideObj.rising,
+                                                                         rawTides,
+                                                                         Object.values(parsedSwell)[0]);
 
         res.download(`${__dirname}/../${render.rendersDir}/${renderFilename}`, "default_name_img.jpeg");
     });
@@ -283,8 +283,9 @@ export default function(): express.Router {
 
         // Current tide height from surfline
         const rawTides = await surfline.getTidesBySpotId(spotId, 1);
+        let                    tideChartFilename: string;
         try {
-            render.renderTideChart(rawTides);
+            tideChartFilename = await render.renderTideChart(rawTides);
         } catch (e) {
             return res.status(500).send("Failed to generate tide chart");
         }

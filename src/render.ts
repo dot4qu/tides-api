@@ -1,4 +1,4 @@
-import {createCanvas} from "canvas";
+import {createCanvas, loadImage} from "canvas";
 import fs from "fs";
 import moment from "moment";
 const plotly = require("plotly")("second.string", "ECFumSwhQNCSasct0Owv");
@@ -33,13 +33,13 @@ function convert24BitTo8Bit(r: number, b: number, g: number): number {
     return output;
 }
 
-export function renderScreenFromData(temperature: number,
-                                     windSpeed: number,
-                                     windDir: string,
-                                     tideHeight: number,
-                                     tideIncreasing: boolean,
-                                     tideData: SurflineTidesResponse[],
-                                     swellData: SurflineWaveResponse[]) {
+export async function renderScreenFromData(temperature: number,
+                                           windSpeed: number,
+                                           windDir: string,
+                                           tideHeight: number,
+                                           tideIncreasing: boolean,
+                                           tideData: SurflineTidesResponse[],
+                                           swellData: SurflineWaveResponse[]) {
     const screenCanvas  = createCanvas(screenWidthPx, screenHeightPx)
     const screenContext = screenCanvas.getContext("2d");
 
@@ -79,10 +79,16 @@ export function renderScreenFromData(temperature: number,
                            screenHeightPx - screenBottomPadPx - 40 - 20 / 2);
 
     // Bottom row tides
-    const tideExtremes      = getTideExtremes(tideData);
-    const tideString        = buildTideString(Object.values(tideExtremes)[0], SpotCheckRevision.Rev3);
-    screenContext.textAlign = "center";
-    screenContext.fillText(`Tide info: ${tideString}`, screenWidthPx / 2, screenHeightPx - screenBottomPadPx - 20 / 2);
+    const tideChartFilename: string = await renderTideChart(tideData);
+    const tideChartImage            = await            loadImage(`${__dirname}/../${rendersDir}/${tideChartFilename}`);
+    screenContext.drawImage(tideChartImage,
+                            screenWidthPx / 2 - tideChartImage.width / 2,
+                            screenHeightPx - screenBottomPadPx - tideChartImage.height);
+    // const tideExtremes              = getTideExtremes(tideData);
+    // const tideString                = buildTideString(Object.values(tideExtremes)[0], SpotCheckRevision.Rev3);
+    // screenContext.textAlign         = "center";
+    // screenContext.fillText(`Tide info: ${tideString}`, screenWidthPx / 2, screenHeightPx - screenBottomPadPx - 20 /
+    // 2);
 
     const rawBuffer             = screenCanvas.toBuffer("raw");
     let raw8BitBuffer: number[] = [];
@@ -96,6 +102,37 @@ export function renderScreenFromData(temperature: number,
 
     fs.writeFileSync(rendersDir + "/render.raw", Buffer.from(raw8BitBuffer));
     return "render.raw";
+}
+
+export async function renderScreenFromDataOffline(): Promise<void> {
+    const screenCanvas  = createCanvas(screenWidthPx, screenHeightPx)
+    const screenContext = screenCanvas.getContext("2d");
+
+    screenContext.fillStyle = "#ffffff";
+    screenContext.fillRect(0, 0, screenWidthPx, screenHeightPx);
+
+    const now        = moment();
+    const timeString = now.format("h:mm a");
+    const dateString = now.format("dddd, MMMM Do YYYY");
+
+    // Large center time
+    screenContext.font      = "60px Impact";
+    screenContext.textAlign = "center";
+    screenContext.fillStyle = "black"
+    screenContext.fillText(timeString, screenWidthPx / 2, screenHeightPx / 2 - 20);
+
+    // Medium center date
+    screenContext.font = "30px Impact";
+    screenContext.fillText(dateString, screenWidthPx / 2, screenHeightPx / 2 + 20);
+
+    const tideChartFilename: string = "test_tide_chart.jpeg";
+    const tideChartImage            = await loadImage(`${__dirname}/../${rendersDir}/${tideChartFilename}`);
+    screenContext.drawImage(tideChartImage,
+                            screenWidthPx / 2 - tideChartImage.width / 2,
+                            screenHeightPx - screenBottomPadPx - tideChartImage.height);
+
+    const jpegBuffer = screenCanvas.toBuffer('image/jpeg', {quality : 1.0});
+    fs.writeFileSync(rendersDir + "/offline_render.jpeg", jpegBuffer);
 }
 
 export function renderSmolImage(): string {
@@ -156,8 +193,8 @@ export function renderTideChart(rawTides: SurflineTidesResponse[]): Promise<stri
 
     const imgOptions = {
         format : "jpeg",
-        width : 1200,
-        height : 600,
+        width : 700,
+        height : 200,
     };
 
     const plotlyPromise = new Promise<string>((resolve, reject) => {
