@@ -267,6 +267,18 @@ export default function(): express.Router {
         res.download(`${__dirname}/../${render.rendersDir}/${renderFilename}`, "default_name_img.jpeg");
     });
 
+    /*
+     * For testing screen layout render when dev machine has no internet connection. Separate route to keep main handler
+     * logic clean.
+     */
+    router.get("/screen_update_offline", async (req: express.Request, res: express.Response) => {
+        const renderFilename = await render.renderScreenFromDataOffline();
+        return res.download(`${__dirname}/../${render.rendersDir}/${renderFilename}`, "default_name_offline_img.jpeg");
+    });
+
+    /*
+     * For testing only for right now, would be useful in the future for partial screen updates
+     */
     router.get("/tides_graph", async (req: express.Request, res: express.Response) => {
         let latitude: number  = req.query.lat as unknown as number;
         let longitude: number = req.query.lon as unknown as number;
@@ -290,7 +302,7 @@ export default function(): express.Router {
             return res.status(500).send("Failed to generate tide chart");
         }
 
-        return res.status(200).send();
+        return res.download(`${__dirname}/../${render.rendersDir}/${tideChartFilename}`, "tide_chart.jpeg")
     });
 
     return router;

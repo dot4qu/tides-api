@@ -50,26 +50,27 @@ export async function renderScreenFromData(temperature: number,
     const timeString = now.format("h:mm a");
     const dateString = now.format("dddd, MMMM Do YYYY");
 
-    // Large center time
+    // Large time
     screenContext.font      = "60px Impact";
-    screenContext.textAlign = "center";
-    screenContext.fillStyle = "black"
-    screenContext.fillText(timeString, screenWidthPx / 2, screenHeightPx / 2 - 20);
-
-    // Medium center date
-    screenContext.font = "30px Impact";
-    screenContext.fillText(dateString, screenWidthPx / 2, screenHeightPx / 2 + 20);
-
-    // Top row conditions
-    screenContext.font      = "20px Impact";
     screenContext.textAlign = "left";
-    screenContext.fillText(`${temperature}º`, screenLeftPadPx, screenTopPadPx + 20 / 2);
-    screenContext.textAlign = "center";
-    screenContext.fillText(`${tideHeight.toString()} ft ${(tideIncreasing ? 'rising' : 'falling')}`,
-                           screenWidthPx / 2,
-                           screenTopPadPx + 20 / 2);
+    screenContext.fillStyle = "black"
+    screenContext.fillText(timeString, screenLeftPadPx + 40, screenTopPadPx + 100);
+
+    // Medium date
+    screenContext.font = "25px Impact";
+    screenContext.fillText(dateString, screenLeftPadPx + 40, screenTopPadPx + 100 + 40);
+
+    const temperatureString = `☀️ ${temperature}º`;
+    const tideString        = `🌊 ${tideHeight.toString()} ft ${(tideIncreasing ? 'rising' : 'falling')}`;
+    const windString = `💨 ${windSpeed} kt. ${windDir}`;
+    // const temperatureMetrics: TextMetrics = screenContext.measureText(temperatureString);
+    // const tideMetrics: TextMetrics        = screenContext.measureText(tideString);
+    // const windMetrics: TextMetrics        = screenContext.measureText(windString);
+    screenContext.font      = "25px Impact";
     screenContext.textAlign = "right";
-    screenContext.fillText(`${windSpeed} kt. ${windDir}`, screenWidthPx - screenRightPadPx, screenTopPadPx + 20 / 2);
+    screenContext.fillText(temperatureString, screenWidthPx - screenRightPadPx - 40, screenTopPadPx + 80);
+    screenContext.fillText(tideString, screenWidthPx - screenRightPadPx - 40, screenTopPadPx + 80 + 35);
+    screenContext.fillText(windString, screenWidthPx - screenRightPadPx - 40, screenTopPadPx + 80 + 70);
 
     // Bottom row forecast
     const swellString       = buildSwellString(swellData, SpotCheckRevision.Rev3);
@@ -104,7 +105,7 @@ export async function renderScreenFromData(temperature: number,
     return "render.raw";
 }
 
-export async function renderScreenFromDataOffline(): Promise<void> {
+export async function renderScreenFromDataOffline(): Promise<string> {
     const screenCanvas  = createCanvas(screenWidthPx, screenHeightPx)
     const screenContext = screenCanvas.getContext("2d");
 
@@ -115,24 +116,52 @@ export async function renderScreenFromDataOffline(): Promise<void> {
     const timeString = now.format("h:mm a");
     const dateString = now.format("dddd, MMMM Do YYYY");
 
-    // Large center time
+    // Large time
     screenContext.font      = "60px Impact";
-    screenContext.textAlign = "center";
+    screenContext.textAlign = "left";
     screenContext.fillStyle = "black"
-    screenContext.fillText(timeString, screenWidthPx / 2, screenHeightPx / 2 - 20);
+    screenContext.fillText(timeString, screenLeftPadPx + 40, screenTopPadPx + 100);
 
-    // Medium center date
-    screenContext.font = "30px Impact";
-    screenContext.fillText(dateString, screenWidthPx / 2, screenHeightPx / 2 + 20);
+    // Medium date
+    screenContext.font = "25px Impact";
+    screenContext.fillText(dateString, screenLeftPadPx + 40, screenTopPadPx + 100 + 40);
+
+    // Conditions
+    const temperature       = 76;
+    const tideHeight        = 1.7;
+    const windSpeed         = 5.4;
+    const windDir           = "NW";
+    const tideIncreasing    = true;
+    const temperatureString = `☀️ ${temperature}º`;
+    const tideString        = `🌊 ${tideHeight.toString()} ft ${(tideIncreasing ? 'rising' : 'falling')}`;
+    const windString = `💨 ${windSpeed} kt. ${windDir}`;
+    const temperatureMetrics: TextMetrics = screenContext.measureText(temperatureString);
+    const tideMetrics: TextMetrics        = screenContext.measureText(tideString);
+    // const windMetrics: TextMetrics        = screenContext.measureText(windString);
+    screenContext.font      = "25px Impact";
+    screenContext.textAlign = "right";
+    screenContext.fillText(temperatureString, screenWidthPx - screenRightPadPx - 40, screenTopPadPx + 80);
+    screenContext.fillText(tideString, screenWidthPx - screenRightPadPx - 40, screenTopPadPx + 80 + 35);
+    screenContext.fillText(windString, screenWidthPx - screenRightPadPx - 40, screenTopPadPx + 80 + 70);
 
     const tideChartFilename: string = "test_tide_chart.jpeg";
-    const tideChartImage            = await loadImage(`${__dirname}/../${rendersDir}/${tideChartFilename}`);
-    screenContext.drawImage(tideChartImage,
-                            screenWidthPx / 2 - tideChartImage.width / 2,
-                            screenHeightPx - screenBottomPadPx - tideChartImage.height);
+    try {
+        const tideChartImage = await loadImage(`${__dirname}/../${rendersDir}/${tideChartFilename}`);
+        screenContext.drawImage(tideChartImage,
+                                screenWidthPx / 2 - tideChartImage.width / 2,
+                                screenHeightPx - screenBottomPadPx - tideChartImage.height);
+    } catch {
+        screenContext.font      = "20px Impact";
+        screenContext.textAlign = "center";
+        screenContext.fillText("No tide chart currently generated",
+                               screenWidthPx / 2,
+                               screenHeightPx - screenBottomPadPx - 200);
+    }
 
     const jpegBuffer = screenCanvas.toBuffer('image/jpeg', {quality : 1.0});
+
     fs.writeFileSync(rendersDir + "/offline_render.jpeg", jpegBuffer);
+    return "offline_render.jpeg";
 }
 
 export function renderSmolImage(): string {
