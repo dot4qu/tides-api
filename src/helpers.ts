@@ -8,10 +8,6 @@ export enum SpotCheckRevision {
     Rev3,
 }
 
-export function epochSecondsToDate(seconds: number): Date {
-    return new Date(seconds * 1000);
-}
-
 export function buildTideString(tides: SurflineTidesResponse[], revision: SpotCheckRevision): string {
     let dailyTides: string[] = [];
     for (let tideObj of tides) {

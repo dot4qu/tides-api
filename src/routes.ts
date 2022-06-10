@@ -1,13 +1,13 @@
 import express from "express";
 import {Router} from "express";
 import fs from 'fs';
+import moment from "moment";
 import fetch from "node-fetch";
 
 import {
     buildSwellString,
     buildTideString,
     degreesToDirStr,
-    epochSecondsToDate,
     getCurrentTideHeight,
     getTideExtremes,
     getWeather,
@@ -65,14 +65,14 @@ export default function(): express.Router {
                     // We don't care about anything between 9:01pm and 2:59am
                     // This only drops the midnight entry for 6-hour intervals
                     // but can be more effective on smaller interval ranges
-                    const date = epochSecondsToDate(element.timestamp as number);
-                    if (date.getHours() < 3 || date.getHours() > 21) {
+                    const date = moment((element.timestamp as number) * 1000);
+                    if (date.hour() < 3 || date.hour() > 21) {
                         return aggregate;
                     }
 
                     // Overwrite epoch timestamp with parsed date
                     element.timestamp = date;
-                    const day         = date.getDate() as number;
+                    const day         = date.date() as number;
                     if (aggregate[day]) {
                         aggregate[day].push(element);
                     } else {
@@ -247,13 +247,11 @@ export default function(): express.Router {
         let rawSwell: SurflineWaveResponse[] = [];
         if (req.query.spot_id) {
             const spotId = req.query.spot_id as unknown as string;
-            rawSwell     = await                            surfline.getWavesBySpotId(spotId, days);
+            rawSwell     = await                            surfline.getWavesBySpotId(spotId, days, 1);
         } else if (req.query.spot_name) {
             const spotName = req.query.spot_name as unknown as string;
-            rawSwell       = await                                surfline.getWavesBySpotName(spotName, days);
+            rawSwell       = await                                surfline.getWavesBySpotName(spotName, days, 1);
         }
-
-        const parsedSwell: {[key: number]: SurflineWaveResponse[]} = surfline.parseSwell(rawSwell);
 
         // Render all info into screen
         const renderFilename: string = await render.renderScreenFromData(weatherResponse.data.temperature,
@@ -262,7 +260,7 @@ export default function(): express.Router {
                                                                          currentTideObj.height,
                                                                          currentTideObj.rising,
                                                                          rawTides,
-                                                                         Object.values(parsedSwell)[0]);
+                                                                         rawSwell);
 
         res.download(`${__dirname}/../${render.rendersDir}/${renderFilename}`, "default_name_img.jpeg");
     });
@@ -279,7 +277,7 @@ export default function(): express.Router {
     /*
      * For testing only for right now, would be useful in the future for partial screen updates
      */
-    router.get("/tides_graph", async (req: express.Request, res: express.Response) => {
+    router.get("/tides_chart", async (req: express.Request, res: express.Response) => {
         let latitude: number  = req.query.lat as unknown as number;
         let longitude: number = req.query.lon as unknown as number;
         let spotId: string    = req.query.spot_id as unknown as string;
@@ -303,6 +301,34 @@ export default function(): express.Router {
         }
 
         return res.download(`${__dirname}/../${render.rendersDir}/${tideChartFilename}`, "tide_chart.jpeg")
+    });
+
+    /*
+     * For testing only for right now, would be useful in the future for partial screen updates
+     */
+    router.get("/swell_chart", async (req: express.Request, res: express.Response) => {
+        let latitude: number  = req.query.lat as unknown as number;
+        let longitude: number = req.query.lon as unknown as number;
+        let spotId: string    = req.query.spot_id as unknown as string;
+        if (!latitude) {
+            latitude = 37.7500186826;
+        }
+        if (!longitude) {
+            longitude = -122.5116348267;
+        }
+        if (!spotId) {
+            spotId = "58bdda3582d034001252e3d0";
+        }
+
+        const rawSwell = await surfline.getWavesBySpotId(spotId, 1, 1);
+        let                    swellChartFilename: string;
+        try {
+            swellChartFilename = await render.renderSwellChart(rawSwell);
+        } catch (e) {
+            return res.status(500).send("Failed to generate swell chart");
+        }
+
+        return res.download(`${__dirname}/../${render.rendersDir}/${swellChartFilename}`, "tide_chart.jpeg")
     });
 
     return router;

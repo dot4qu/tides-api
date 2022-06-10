@@ -10,7 +10,7 @@ interface SurflineSurfObject {
 }
 
 interface SurflineWaveResponse {
-    timestamp: number|Date;
+    timestamp: number|import("moment").Moment;
     swells: any[];
     surf: SurflineSurfObject;
 }
