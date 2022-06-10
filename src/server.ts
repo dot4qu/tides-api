@@ -1,6 +1,7 @@
 import bodyParser from "body-parser";
 import express from "express";
 import fs from "fs";
+import http from "http";
 import https from "https";
 
 import {twoDigits} from "./helpers";
@@ -50,6 +51,12 @@ if (process.env.DEPLOY_STAGE === "PROD") {
     };
 }
 
+if (process.env.DEPLOY_STAGE !== "PROD") {
+    const httpServer = http.createServer(app);
+    httpServer.listen(9080);
+    console.log(`Dev http server running on port ${port}`);
+}
+
 const httpsServer = https.createServer(creds, app);
 httpsServer.listen(port);
-console.log(`Server running on port ${port}`);
+console.log(`HTTPS-only server running on port ${port}`);
