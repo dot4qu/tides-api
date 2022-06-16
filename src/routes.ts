@@ -212,13 +212,6 @@ export default function(): express.Router {
         res.sendFile(binaryPath, {root : `${__dirname}/..`});
     });
 
-    router.get("/test_image", async (req: express.Request, res: express.Response) => {
-        // const renderFilename: string = render.renderSmolImage();
-        // const renderFilename: string = render.renderScreenFromData(text);
-        const renderFilename = "render.raw";
-        res.download(`${__dirname}/../${render.rendersDir}/${renderFilename}`, "default_name_img.jpeg");
-    });
-
     router.get("/screen_update", async (req: express.Request, res: express.Response) => {
         const latitude: number  = req.query.lat as unknown   as number;
         const longitude: number = req.query.lon as unknown  as number;
@@ -269,66 +262,61 @@ export default function(): express.Router {
      * For testing screen layout render when dev machine has no internet connection. Separate route to keep main handler
      * logic clean.
      */
-    router.get("/screen_update_offline", async (req: express.Request, res: express.Response) => {
-        const renderFilename = await render.renderScreenFromDataOffline();
-        return res.download(`${__dirname}/../${render.rendersDir}/${renderFilename}`, "default_name_offline_img.jpeg");
-    });
+    // router.get("/screen_update_offline", async (req: express.Request, res: express.Response) => {
+    //     const renderFilename = await render.renderScreenFromDataOffline();
+    //     return res.download(`${__dirname}/../${render.rendersDir}/${renderFilename}`,
+    //     "default_name_offline_img.jpeg");
+    // });
 
     /*
-     * For testing only for right now, would be useful in the future for partial screen updates
+     * Render a 2 pixels-per-byte, black and white raw array of data and return it to caller
      */
     router.get("/tides_chart", async (req: express.Request, res: express.Response) => {
         let latitude: number  = req.query.lat as unknown as number;
         let longitude: number = req.query.lon as unknown as number;
         let spotId: string    = req.query.spot_id as unknown as string;
-        if (!latitude) {
-            latitude = 37.7500186826;
-        }
-        if (!longitude) {
-            longitude = -122.5116348267;
-        }
-        if (!spotId) {
-            spotId = "58bdda3582d034001252e3d0";
+        if (!latitude || !longitude || !spotId) {
+            console.log(`Received tides_chart req with missing lat, lon, or spot id (${req.query.lat} - ${
+                req.query.lon} - ${spotId})`);
+            res.status(400).send("Missing request data");
+            return;
         }
 
         // Current tide height from surfline
         const rawTides = await surfline.getTidesBySpotId(spotId, 1);
-        let                    tideChartFilename: string;
+        let                    tideChartFilepath: string;
         try {
-            tideChartFilename = await render.renderTideChart(rawTides);
+            tideChartFilepath = await render.renderTideChart(rawTides);
         } catch (e) {
             return res.status(500).send("Failed to generate tide chart");
         }
 
-        return res.download(`${__dirname}/../${render.rendersDir}/${tideChartFilename}`, "tide_chart.jpeg")
+        return res.download(tideChartFilepath, "tide_chart.raw")
     });
 
     /*
-     * For testing only for right now, would be useful in the future for partial screen updates
+     * Render a 2 pixels-per-byte, black and white raw array of data and return it to caller
      */
     router.get("/swell_chart", async (req: express.Request, res: express.Response) => {
         let latitude: number  = req.query.lat as unknown as number;
         let longitude: number = req.query.lon as unknown as number;
         let spotId: string    = req.query.spot_id as unknown as string;
-        if (!latitude) {
-            latitude = 37.7500186826;
-        }
-        if (!longitude) {
-            longitude = -122.5116348267;
-        }
-        if (!spotId) {
-            spotId = "58bdda3582d034001252e3d0";
+        if (!latitude || !longitude || !spotId) {
+            console.log(`Received swell_chart req with missing lat, lon, or spot id (${req.query.lat} - ${
+                req.query.lon} - ${spotId})`);
+            res.status(400).send("Missing request data");
+            return;
         }
 
         const rawSwell = await surfline.getWavesBySpotId(spotId, 1, 1);
-        let                    swellChartFilename: string;
+        let                    swellChartFilepath: string;
         try {
-            swellChartFilename = await render.renderSwellChart(rawSwell);
+            swellChartFilepath = await render.renderSwellChart(rawSwell);
         } catch (e) {
             return res.status(500).send("Failed to generate swell chart");
         }
 
-        return res.download(`${__dirname}/../${render.rendersDir}/${swellChartFilename}`, "tide_chart.jpeg")
+        return res.download(swellChartFilepath, "swell_chart.raw")
     });
 
     return router;

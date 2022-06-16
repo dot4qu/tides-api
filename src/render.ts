@@ -1,6 +1,8 @@
 import {createCanvas, loadImage} from "canvas";
 import fs from "fs";
 import moment from "moment";
+import path from "path";
+
 const plotly = require("plotly")("second.string", "ECFumSwhQNCSasct0Owv");
 
 import {buildSwellString, buildTideString, getTideExtremes, SpotCheckRevision} from "./helpers";
@@ -28,33 +30,70 @@ function convert24BitTo8Bit(r: number, b: number, g: number): number {
         b = 255;
     }
 
-    const output = (((r * 7 / 255) & 0x7) << 5) + (((b * 7 / 255) & 0x7) << 2) + ((g * 7 / 255) & 0x3);
+    const output = 0.299 * r + 0.587 * g + 0.114 * b;
     // console.log(`Converted ${r},${g},${b} to ${output}`);
     return output;
 }
 
-export function renderSmolImage(): string {
-    const screenCanvas  = createCanvas(100, 50)
-    const screenContext = screenCanvas.getContext('2d');
+// Convert a buffer of 8-bit rgb values (see convert24BitTo8Bit) to a two-pixels-per-byte buffer of only 0x00 and 0xFF
+// pixels
+function toPackedBlackAndWhite(rawBuffer: Buffer): Buffer {
+    let r: number          = 0;
+    let b: number          = 0;
+    let g: number          = 0;
+    let packedByte: number = 0;
+    let raw8BitBuffer: Buffer =
+        Buffer.alloc(rawBuffer.length / 8);  // divide by 4 for the rgba -> grayscale and another 2 for the pack
+    let val;
+    for (let i = 0, idx8Bit = 0; i < rawBuffer.length; i += 8, idx8Bit++) {
+        // Take one 4-byte pixel, convert to 1 byte, and save in upper nibble of raw 8bit index
+        r   = rawBuffer[i];
+        b   = rawBuffer[i + 1];
+        g   = rawBuffer[i + 2];
+        val = convert24BitTo8Bit(r, g, b);
 
-    screenContext.fillStyle = '#ffffff';
-    screenContext.fillRect(0, 0, screenWidthPx, screenHeightPx);
+        // The grayscale wasn't showing up great on the screen, so rail it to fully black or white.
+        if (val > 0x90) {
+            val = 0xFF;
+        } else {
+            val = 0x00;
+        }
+        raw8BitBuffer[idx8Bit] = val & 0xF0;
 
-    screenContext.font      = '30px Impact';
-    screenContext.textAlign = 'center';
-    screenContext.fillStyle = 'black'
-    screenContext.fillText('doink', 100 / 2, 50 / 2);
-
-    const jpegBuffer            = screenCanvas.toBuffer('image/jpeg', {quality : 1.0});
-    const rawBuffer             = screenCanvas.toBuffer('raw');
-    let raw8BitBuffer: number[] = [];
-    for (let i = 0, idx8Bit = 0; i < rawBuffer.length; i += 4, idx8Bit++) {
-        raw8BitBuffer[idx8Bit] = convert24BitTo8Bit(rawBuffer[i], rawBuffer[i + 1], rawBuffer[i + 2]);
+        // Convert the next 4-byte pixel to 1 byte, and OR the most significant 4 bits it into the lower nibble of the
+        // same raw 8bit index
+        r   = rawBuffer[i + 4];
+        b   = rawBuffer[i + 5];
+        g   = rawBuffer[i + 6];
+        val = convert24BitTo8Bit(r, g, b);
+        if (val > 0x80) {
+            val = 0xFF;
+        } else {
+            val = 0x00;
+        }
+        raw8BitBuffer[idx8Bit] |= (val & 0xF0) >> 4;
     }
 
-    fs.writeFileSync(rendersDir + '/smol_render.jpeg', jpegBuffer);
-    fs.writeFileSync(rendersDir + '/smol_render.raw', Buffer.from(raw8BitBuffer));
-    return 'smol_render.jpeg';
+    return raw8BitBuffer;
+}
+
+/*
+ * Create canvas and burn plotly-gen'd jpeg to it in order to convert it to raw RGB bytes, then pack and B&W the bytes
+ * for delivery to device
+ */
+async function convertJpegToRawPacked(jpegFilePath: string): Promise<string> {
+    const chartCanvas    = createCanvas(700, 200);
+    const chartContext   = chartCanvas.getContext("2d");
+    const tideChartImage = await loadImage(jpegFilePath);
+    chartContext.drawImage(tideChartImage, 0, 0);
+    const rawBuffer    = chartCanvas.toBuffer('raw');
+    const packedBuffer = toPackedBlackAndWhite(rawBuffer);
+
+    const baseChartFilename = path.parse(jpegFilePath).name;
+    const rawChartFilepath  = path.join(path.dirname(jpegFilePath), baseChartFilename + ".raw");
+    await fs.promises.writeFile(rawChartFilepath, Buffer.from(packedBuffer));
+
+    return rawChartFilepath;
 }
 
 export async function renderScreenFromData(temperature: number,
@@ -121,25 +160,19 @@ export async function renderScreenFromData(temperature: number,
                                    screenHeightPx - screenBottomPadPx - 400);
         }
     }
-    // const swellString       = buildSwellString(swellData, SpotCheckRevision.Rev3);
-    // screenContext.textAlign = "center";
-    // screenContext.fillText(`Swell info: ${swellString}`,
-    //                        screenWidthPx / 2,
-    //                        screenHeightPx - screenBottomPadPx - 40 - 20 / 2);
 
     // Bottom row tides
-    let tideChartFilename: string = "";
+    let tideChartFilepath: string = "";
     try {
-        tideChartFilename = await renderTideChart(tideData);
+        tideChartFilepath = await renderTideChart(tideData);
     } catch (e) {
         console.error(`Error rendering tide chart: ${e}`);
     }
 
-    if (tideChartFilename) {
-        console.log(`Attempting to burn rendered tide chart at ${tideChartFilename} into screen jpeg`);
+    if (tideChartFilepath) {
+        console.log(`Attempting to burn rendered tide chart at ${tideChartFilepath} into screen jpeg`);
         try {
-            // TODO :: HACK don't sleep to wait for stream to finish, make render functions wait on stream finish event
-            const tideChartImage = await loadImage(`${__dirname}/../${rendersDir}/${tideChartFilename}`);
+            const tideChartImage = await loadImage(tideChartFilepath);
             screenContext.drawImage(tideChartImage,
                                     screenWidthPx / 2 - tideChartImage.width / 2,
                                     screenHeightPx - screenBottomPadPx - tideChartImage.height);
@@ -153,88 +186,79 @@ export async function renderScreenFromData(temperature: number,
                                    screenHeightPx - screenBottomPadPx - 200);
         }
     }
-    // const tideExtremes              = getTideExtremes(tideData);
-    // const tideString                = buildTideString(Object.values(tideExtremes)[0], SpotCheckRevision.Rev3);
-    // screenContext.textAlign         = "center";
-    // screenContext.fillText(`Tide info: ${tideString}`, screenWidthPx / 2, screenHeightPx - screenBottomPadPx - 20
-    // / 2);
-
-    const rawBuffer             = screenCanvas.toBuffer("raw");
-    let raw8BitBuffer: number[] = [];
-    for (let i = 0, idx8Bit = 0; i < rawBuffer.length; i += 4, idx8Bit++) {
-        raw8BitBuffer[idx8Bit] = convert24BitTo8Bit(rawBuffer[i], rawBuffer[i + 1], rawBuffer[i + 2]);
-    }
 
     // TODO :: Remove or flag out jpeg generation for debugging
     const jpegBuffer = screenCanvas.toBuffer('image/jpeg', {quality : 1.0});
     fs.writeFileSync(rendersDir + "/render.jpeg", jpegBuffer);
 
-    fs.writeFileSync(rendersDir + "/render.raw", Buffer.from(raw8BitBuffer));
+    const rawBuffer    = screenCanvas.toBuffer("raw");
+    const packedBuffer = toPackedBlackAndWhite(rawBuffer);
+    fs.writeFileSync(rendersDir + "/render.raw", Buffer.from(packedBuffer));
     return "render.raw";
 }
 
-export async function renderScreenFromDataOffline(): Promise<string> {
-    const screenCanvas  = createCanvas(screenWidthPx, screenHeightPx)
-    const screenContext = screenCanvas.getContext("2d");
+// export async function renderScreenFromDataOffline(): Promise<string> {
+//     const screenCanvas  = createCanvas(screenWidthPx, screenHeightPx)
+//     const screenContext = screenCanvas.getContext("2d");
 
-    screenContext.fillStyle = "#ffffff";
-    screenContext.fillRect(0, 0, screenWidthPx, screenHeightPx);
+//     screenContext.fillStyle = "#ffffff";
+//     screenContext.fillRect(0, 0, screenWidthPx, screenHeightPx);
 
-    const now        = moment();
-    const timeString = now.format("h:mm a");
-    const dateString = now.format("dddd, MMMM Do YYYY");
+//     const now        = moment();
+//     const timeString = now.format("h:mm a");
+//     const dateString = now.format("dddd, MMMM Do YYYY");
 
-    // Large time
-    screenContext.font      = "60px Impact";
-    screenContext.textAlign = "left";
-    screenContext.fillStyle = "black"
-    screenContext.fillText(timeString, screenLeftPadPx + 40, screenTopPadPx + 100);
+//     // Large time
+//     screenContext.font      = "60px Impact";
+//     screenContext.textAlign = "left";
+//     screenContext.fillStyle = "black"
+//     screenContext.fillText(timeString, screenLeftPadPx + 40, screenTopPadPx + 100);
 
-    // Medium date
-    screenContext.font = "25px Impact";
-    screenContext.fillText(dateString, screenLeftPadPx + 40, screenTopPadPx + 100 + 40);
+//     // Medium date
+//     screenContext.font = "25px Impact";
+//     screenContext.fillText(dateString, screenLeftPadPx + 40, screenTopPadPx + 100 + 40);
 
-    // Conditions
-    const temperature                     = 76;
-    const tideHeight                      = 1.7;
-    const windSpeed                       = 5.4;
-    const windDir                         = "NW";
-    const tideIncreasing                  = true;
-    const temperatureString               = `${temperature}º`;
-    const tideString                      = `${tideHeight.toString()} ft ${(tideIncreasing ? 'rising' : 'falling')}`;
-    const windString = `${windSpeed} kt. ${windDir}`;
-    const temperatureMetrics: TextMetrics = screenContext.measureText(temperatureString);
-    const tideMetrics: TextMetrics        = screenContext.measureText(tideString);
-    // const windMetrics: TextMetrics        = screenContext.measureText(windString);
-    screenContext.font      = "25px Impact";
-    screenContext.textAlign = "right";
-    screenContext.fillText(temperatureString, screenWidthPx - screenRightPadPx - 40, screenTopPadPx + 80);
-    screenContext.fillText(tideString, screenWidthPx - screenRightPadPx - 40, screenTopPadPx + 80 + 35);
-    screenContext.fillText(windString, screenWidthPx - screenRightPadPx - 40, screenTopPadPx + 80 + 70);
+//     // Conditions
+//     const temperature                     = 76;
+//     const tideHeight                      = 1.7;
+//     const windSpeed                       = 5.4;
+//     const windDir                         = "NW";
+//     const tideIncreasing                  = true;
+//     const temperatureString               = `${temperature}º`;
+//     const tideString                      = `${tideHeight.toString()} ft ${(tideIncreasing ? 'rising' : 'falling')}`;
+//     const windString = `${windSpeed} kt. ${windDir}`;
+//     const temperatureMetrics: TextMetrics = screenContext.measureText(temperatureString);
+//     const tideMetrics: TextMetrics        = screenContext.measureText(tideString);
+//     // const windMetrics: TextMetrics        = screenContext.measureText(windString);
+//     screenContext.font      = "25px Impact";
+//     screenContext.textAlign = "right";
+//     screenContext.fillText(temperatureString, screenWidthPx - screenRightPadPx - 40, screenTopPadPx + 80);
+//     screenContext.fillText(tideString, screenWidthPx - screenRightPadPx - 40, screenTopPadPx + 80 + 35);
+//     screenContext.fillText(windString, screenWidthPx - screenRightPadPx - 40, screenTopPadPx + 80 + 70);
 
-    const tideChartFilename: string = "test_tide_chart.jpeg";
-    try {
-        const tideChartImage = await loadImage(`${__dirname}/../${rendersDir}/${tideChartFilename}`);
-        screenContext.drawImage(tideChartImage,
-                                screenWidthPx / 2 - tideChartImage.width / 2,
-                                screenHeightPx - screenBottomPadPx - tideChartImage.height);
-    } catch (e) {
-        console.error(`Error generating tide chart: ${e}`);
+//     const tideChartFilename: string = "test_tide_chart.jpeg";
+//     try {
+//         const tideChartImage = await loadImage(`${__dirname}/../${rendersDir}/${tideChartFilename}`);
+//         screenContext.drawImage(tideChartImage,
+//                                 screenWidthPx / 2 - tideChartImage.width / 2,
+//                                 screenHeightPx - screenBottomPadPx - tideChartImage.height);
+//     } catch (e) {
+//         console.error(`Error generating tide chart: ${e}`);
 
-        screenContext.font      = "20px Impact";
-        screenContext.textAlign = "center";
-        screenContext.fillText("No tide chart currently generated",
-                               screenWidthPx / 2,
-                               screenHeightPx - screenBottomPadPx - 200);
-    }
+//         screenContext.font      = "20px Impact";
+//         screenContext.textAlign = "center";
+//         screenContext.fillText("No tide chart currently generated",
+//                                screenWidthPx / 2,
+//                                screenHeightPx - screenBottomPadPx - 200);
+//     }
 
-    const jpegBuffer = screenCanvas.toBuffer('image/jpeg', {quality : 1.0});
+//     const jpegBuffer = screenCanvas.toBuffer('image/jpeg', {quality : 1.0});
 
-    fs.writeFileSync(rendersDir + "/offline_render.jpeg", jpegBuffer);
-    return "offline_render.jpeg";
-}
+//     fs.writeFileSync(rendersDir + "/offline_render.jpeg", jpegBuffer);
+//     return "offline_render.jpeg";
+// }
 
-export function renderTideChart(rawTides: SurflineTidesResponse[]): Promise<string> {
+export async function renderTideChart(rawTides: SurflineTidesResponse[]): Promise<string> {
     // Switch timestamps received from server to moment objects
     const rawTidesWithDates = rawTides.map(x => ({...x, timestamp : moment((x.timestamp as number) * 1000)}));
 
@@ -249,7 +273,7 @@ export function renderTideChart(rawTides: SurflineTidesResponse[]): Promise<stri
         line : {
             shape : "spline",
             smoothing : 1.3,  // apparently 1.3 is highest value...? Defaults to smoothest if ommitted as well
-            color : "black",
+            // color : "black",
         },
         type : "scatter",
     };
@@ -291,17 +315,18 @@ export function renderTideChart(rawTides: SurflineTidesResponse[]): Promise<stri
             }
 
             // Kick off stream of image piped to file but don't resolve promise until full stream written
-            const filename        = "test_tide_chart.jpeg";
-            const chartFileStream = fs.createWriteStream(`${__dirname}/../${rendersDir}/${filename}`);
-            const pipeStream = imageStream.pipe(chartFileStream);
-            pipeStream.on("finish", () => resolve(filename));
+            const filepath        = `${__dirname}/../${rendersDir}/test_tide_chart.jpeg`;
+            const chartFileStream = fs.createWriteStream(filepath);
+            const pipeStream      = imageStream.pipe(chartFileStream);
+            pipeStream.on("finish", () => resolve(filepath));
         });
     });
 
-    return plotlyPromise;
+    const chartFilepath = await plotlyPromise;
+    return await                convertJpegToRawPacked(chartFilepath);
 }
 
-export function renderSwellChart(rawSwell: SurflineWaveResponse[]): Promise<string> {
+export async function renderSwellChart(rawSwell: SurflineWaveResponse[]): Promise<string> {
     // Switch timestamps received from server to moment objects
     const rawSwellWithDates = rawSwell.map(x => ({...x, timestamp : moment((x.timestamp as number) * 1000)}));
 
@@ -356,12 +381,13 @@ export function renderSwellChart(rawSwell: SurflineWaveResponse[]): Promise<stri
             }
 
             // Kick off stream of image piped to file but don't resolve promise until full stream written
-            const filename        = "test_swell_chart.jpeg";
-            const chartFileStream = fs.createWriteStream(`${__dirname}/../${rendersDir}/${filename}`);
-            const pipeStream = imageStream.pipe(chartFileStream);
+            const filename        = `${__dirname}/../${rendersDir}/test_swell_chart.jpeg`;
+            const chartFileStream = fs.createWriteStream(filename);
+            const pipeStream      = imageStream.pipe(chartFileStream);
             pipeStream.on("finish", () => resolve(filename));
         });
     });
 
-    return plotlyPromise;
+    const chartFilepath = await plotlyPromise;
+    return await                convertJpegToRawPacked(chartFilepath);
 }
