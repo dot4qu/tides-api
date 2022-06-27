@@ -275,6 +275,8 @@ export default function(): express.Router {
         let latitude: number  = req.query.lat as unknown as number;
         let longitude: number = req.query.lon as unknown as number;
         let spotId: string    = req.query.spot_id as unknown as string;
+        let width: number     = req.query.width as unknown as number;
+        let height: number    = req.query.height as unknown as number;
         if (!latitude || !longitude || !spotId) {
             console.log(`Received tides_chart req with missing lat, lon, or spot id (${req.query.lat} - ${
                 req.query.lon} - ${spotId})`);
@@ -282,11 +284,19 @@ export default function(): express.Router {
             return;
         }
 
+        if (!width) {
+            width = 700;
+        }
+
+        if (!height) {
+            height = 200;
+        }
+
         // Current tide height from surfline
         const rawTides = await surfline.getTidesBySpotId(spotId, 1);
         let                    tideChartFilepath: string;
         try {
-            tideChartFilepath = await render.renderTideChart(rawTides);
+            tideChartFilepath = await render.renderTideChart(rawTides, width, height);
         } catch (e) {
             return res.status(500).send("Failed to generate tide chart");
         }
@@ -301,6 +311,8 @@ export default function(): express.Router {
         let latitude: number  = req.query.lat as unknown as number;
         let longitude: number = req.query.lon as unknown as number;
         let spotId: string    = req.query.spot_id as unknown as string;
+        let width: number     = req.query.width as unknown as number;
+        let height: number    = req.query.height as unknown as number;
         if (!latitude || !longitude || !spotId) {
             console.log(`Received swell_chart req with missing lat, lon, or spot id (${req.query.lat} - ${
                 req.query.lon} - ${spotId})`);
@@ -308,10 +320,18 @@ export default function(): express.Router {
             return;
         }
 
+        if (!width) {
+            width = 700;
+        }
+
+        if (!height) {
+            height = 200;
+        }
+
         const rawSwell = await surfline.getWavesBySpotId(spotId, 1, 1);
         let                    swellChartFilepath: string;
         try {
-            swellChartFilepath = await render.renderSwellChart(rawSwell);
+            swellChartFilepath = await render.renderSwellChart(rawSwell, width, height);
         } catch (e) {
             return res.status(500).send("Failed to generate swell chart");
         }

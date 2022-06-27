@@ -138,7 +138,7 @@ export async function renderScreenFromData(temperature: number,
     // Bottom row forecast
     let swellChartFilename: string = "";
     try {
-        swellChartFilename = await renderSwellChart(swellData);
+        swellChartFilename = await renderSwellChart(swellData, 700, 200);
     } catch (e) {
         console.error(`Error rendering swell chart: ${e}`);
     }
@@ -164,7 +164,7 @@ export async function renderScreenFromData(temperature: number,
     // Bottom row tides
     let tideChartFilepath: string = "";
     try {
-        tideChartFilepath = await renderTideChart(tideData);
+        tideChartFilepath = await renderTideChart(tideData, 700, 200);
     } catch (e) {
         console.error(`Error rendering tide chart: ${e}`);
     }
@@ -258,7 +258,8 @@ export async function renderScreenFromData(temperature: number,
 //     return "offline_render.jpeg";
 // }
 
-export async function renderTideChart(rawTides: SurflineTidesResponse[]): Promise<string> {
+export async function renderTideChart(rawTides: SurflineTidesResponse[], width: number, height: number):
+    Promise<string> {
     // Switch timestamps received from server to moment objects
     const rawTidesWithDates = rawTides.map(x => ({...x, timestamp : moment((x.timestamp as number) * 1000)}));
 
@@ -303,8 +304,8 @@ export async function renderTideChart(rawTides: SurflineTidesResponse[]): Promis
 
     const imgOptions = {
         format : "jpeg",
-        width : 700,
-        height : 200,
+        width,
+        height,
     };
 
     const plotlyPromise = new Promise<string>((resolve, reject) => {
@@ -326,7 +327,8 @@ export async function renderTideChart(rawTides: SurflineTidesResponse[]): Promis
     return await                convertJpegToRawPacked(chartFilepath);
 }
 
-export async function renderSwellChart(rawSwell: SurflineWaveResponse[]): Promise<string> {
+export async function renderSwellChart(rawSwell: SurflineWaveResponse[], width: number, height: number):
+    Promise<string> {
     // Switch timestamps received from server to moment objects
     const rawSwellWithDates = rawSwell.map(x => ({...x, timestamp : moment((x.timestamp as number) * 1000)}));
 
@@ -369,8 +371,8 @@ export async function renderSwellChart(rawSwell: SurflineWaveResponse[]): Promis
 
     const imgOptions = {
         format : "jpeg",
-        width : 700,
-        height : 200,
+        width,
+        height,
     };
 
     const plotlyPromise = new Promise<string>((resolve, reject) => {
