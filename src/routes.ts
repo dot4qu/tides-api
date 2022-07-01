@@ -112,16 +112,16 @@ export default function(): express.Router {
 
         const windDirStr: string = degreesToDirStr(weatherResponse.data.wind.deg);
 
-        // We don't want A) our embedded code to have to deal with floating point
-        // and B) to show the user fractional degrees/mph, so round temp and
-        // wind_speed and cast tide as string
+        // We don't want A) our embedded code to have to deal with floating point in the case of tide height
+        // and B) to show the user fractional temp degrees/mph, so cast tide as string and round temp and
+        // wind_speed and
         const responseObj: TidesResponse = {
             errorMessage : undefined,
             data : {
-                temp : Math.round(weatherResponse.data.temp),
+                temp : Math.round(weatherResponse.data.temperature),
                 wind_speed : Math.round(weatherResponse.data.wind.speed),
                 wind_dir : windDirStr,
-                tide_height : currentTideObj.height
+                tide_height : currentTideObj.height.toString(),
             }
         };
 

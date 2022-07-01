@@ -54,7 +54,7 @@ if (process.env.DEPLOY_STAGE === "PROD") {
 if (process.env.DEPLOY_STAGE !== "PROD") {
     const httpServer = http.createServer(app);
     httpServer.listen(9080);
-    console.log(`Dev http server running on port ${port}`);
+    console.log(`Dev http server running on port ${9080}`);
 }
 
 const httpsServer = https.createServer(creds, app);
