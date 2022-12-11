@@ -46,32 +46,27 @@ function toPackedBlackAndWhite(rawBuffer: Buffer): Buffer {
         Buffer.alloc(rawBuffer.length / 8);  // divide by 4 for the rgba -> grayscale and another 2 for the pack
     let val;
     for (let i = 0, idx8Bit = 0; i < rawBuffer.length; i += 8, idx8Bit++) {
-        // Take one 4-byte pixel, convert to 1 byte, and save in upper nibble of raw 8bit index
+        // Take one 4-byte pixel, convert to 1 byte, and save in LOWER nibble of raw 8bit index. Little endian alignment
+        // of nibbles within each byte
         r   = rawBuffer[i];
         b   = rawBuffer[i + 1];
         g   = rawBuffer[i + 2];
         val = convert24BitTo8Bit(r, g, b);
 
-        // The grayscale wasn't showing up great on the screen, so rail it to fully black or white.
-        if (val > 0x90) {
-            val = 0xFF;
-        } else {
-            val = 0x00;
-        }
-        raw8BitBuffer[idx8Bit] = val & 0xF0;
+        raw8BitBuffer[idx8Bit] = (val & 0xF0) >> 4;
 
-        // Convert the next 4-byte pixel to 1 byte, and OR the most significant 4 bits it into the lower nibble of the
+        // Convert the next 4-byte pixel to 1 byte, and OR the least significant 4 bits it into the upper nibble of the
         // same raw 8bit index
         r   = rawBuffer[i + 4];
         b   = rawBuffer[i + 5];
         g   = rawBuffer[i + 6];
         val = convert24BitTo8Bit(r, g, b);
-        if (val > 0x80) {
-            val = 0xFF;
-        } else {
-            val = 0x00;
-        }
-        raw8BitBuffer[idx8Bit] |= (val & 0xF0) >> 4;
+        // if (val > 0x80) {
+        //     val = 0xFF;
+        // } else {
+        //     val = 0x00;
+        // }
+        raw8BitBuffer[idx8Bit] |= (val & 0xF0);
     }
 
     return raw8BitBuffer;
@@ -277,7 +272,8 @@ export async function renderTideChart(rawTides: SurflineTidesResponse[], width: 
             shape : "spline",
             smoothing : 1.3,  // apparently 1.3 is highest value...? Defaults to smoothest if ommitted as well
             type : "solid",
-            width : 4,  // default is 2
+            width : 4,        // default is 2
+            color : "black",  // default is blue
         },
         type : "scatter",
     };
@@ -289,6 +285,7 @@ export async function renderTideChart(rawTides: SurflineTidesResponse[], width: 
                 text : "Tide Chart",
                 font : {
                     size : 20,
+                    color : "black",
                 },
             },
             xaxis : {
@@ -297,35 +294,41 @@ export async function renderTideChart(rawTides: SurflineTidesResponse[], width: 
                 tick0 : tidesSingleDay[0].timestamp.hour(),
                 dtick : 4.0,
                 showgrid : false,
+                color : "black",
                 tickfont : {
-                    size : 20,
+                    size : 15,
+                    color : "black",
                 },
                 ticksuffix : "hr",
                 title : {
                     text : tidesSingleDay[0].timestamp.format("dddd MM/DD"),  // Friday 12/22, non-localized but eh
                     font : {
                         size : 15,
+                        color : "black",
                     },
                 },
             },
             yaxis : {
                 showgrid : false,
+                color : "black",
                 tickfont : {
-                    size : 20,
+                    size : 15,
+                    color : "black",
                 },
                 title : {
                     text : "Height (m)",
                     font : {
                         size : 15,
+                        color : "black",
                     },
                 },
             },
             // Removes all of the padding while keeping the axis labels if around their default distance
             margin : {
-                l : 60,
+                l : 50,
                 t : 40,
                 r : 30,
-                b : 50,
+                b : 40,
             },
         }
     };
