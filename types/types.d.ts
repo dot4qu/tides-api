@@ -17,6 +17,7 @@ interface SurflineWaveResponse {
 
 interface SurflineTidesResponse {
     timestamp: number|import("moment").Moment;
+    utcOffset: number;
     type: string;
     height: number;
 }

@@ -260,15 +260,17 @@ export async function renderScreenFromData(temperature: number,
 
 export async function renderTideChart(rawTides: SurflineTidesResponse[], width: number, height: number):
     Promise<string> {
-    // Switch timestamps received from server to moment objects
-    const rawTidesWithDates = rawTides.map(x => ({...x, timestamp : moment((x.timestamp as number) * 1000)}));
+    // Switch timestamps received from server to moment objects. Epoch is timezone/offset-agnostic, so instantiate as
+    // UTC. Use utcOffset func to shift date to user's utc offset to correctly interpret day of year so we know which
+    // raw tide objects to filter before burning into chart.
+    const tidesWithResponseOffset =
+        rawTides.map(x => ({...x, timestamp : moment.utc(((x.timestamp as number) * 1000)).utcOffset(x.utcOffset)}));
+    const responseDayOfYear: number = tidesWithResponseOffset[0].timestamp.dayOfYear();
+    const tidesSingleDay            = tidesWithResponseOffset.filter(x => x.timestamp.dayOfYear() == responseDayOfYear);
 
-    const todaysDate = moment().dayOfYear();
-    const todaysTides =
-        rawTidesWithDates.sort(x => x.timestamp.valueOf()).filter(x => x.timestamp.dayOfYear() == todaysDate);
     let tideTrace = {
-        x : todaysTides.map(x => x.timestamp.hour() + x.timestamp.minute() / 60),
-        y : todaysTides.map(x => x.height),
+        x : tidesSingleDay.map(x => x.timestamp.hour() + x.timestamp.minute() / 60),
+        y : tidesSingleDay.map(x => x.height),
         mode : "lines",
         name : "Tides",
         line : {
@@ -292,14 +294,15 @@ export async function renderTideChart(rawTides: SurflineTidesResponse[], width: 
             xaxis : {
                 autotick : false,
                 ticks : "inside",
-                tick0 : todaysTides[0].timestamp.hour(),
+                tick0 : tidesSingleDay[0].timestamp.hour(),
                 dtick : 4.0,
                 showgrid : false,
                 tickfont : {
                     size : 20,
                 },
+                ticksuffix : "hr",
                 title : {
-                    text : "Hour",
+                    text : tidesSingleDay[0].timestamp.format("dddd MM/DD"),  // Friday 12/22, non-localized but eh
                     font : {
                         size : 15,
                     },
@@ -319,10 +322,10 @@ export async function renderTideChart(rawTides: SurflineTidesResponse[], width: 
             },
             // Removes all of the padding while keeping the axis labels if around their default distance
             margin : {
-                l : 50,
+                l : 60,
                 t : 40,
                 r : 30,
-                b : 40,
+                b : 50,
             },
         }
     };

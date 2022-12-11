@@ -89,8 +89,8 @@ export default function(): express.Router {
     });
 
     router.get("/conditions", async (req: express.Request, res: express.Response) => {
-        const latitude: number  = req.query.lat as unknown   as number;
-        const longitude: number = req.query.lon as unknown  as number;
+        const latitude: number  = req.query.lat as unknown as number;
+        const longitude: number = req.query.lon as unknown as number;
         const spotId: string    = req.query.spot_id as unknown as string;
 
         if (!latitude || !longitude) {
@@ -103,9 +103,9 @@ export default function(): express.Router {
             return -99;
         }
 
-        const tidesRes = await                       surfline.getTidesBySpotId(spotId, 1);
-        let                                          currentTideObj: CurrentTide = getCurrentTideHeight(tidesRes);
-        const weatherResponse: TidesResponse = await getWeather(latitude, longitude);
+        const tidesRes                                     = await surfline.getTidesBySpotId(spotId, 1);
+        let                    currentTideObj: CurrentTide = getCurrentTideHeight(tidesRes);
+        const weatherResponse: TidesResponse               = await getWeather(latitude, longitude);
         if (weatherResponse.errorMessage) {
             return res.status(500).json(weatherResponse);
         }
@@ -213,10 +213,10 @@ export default function(): express.Router {
     });
 
     router.get("/screen_update", async (req: express.Request, res: express.Response) => {
-        const latitude: number  = req.query.lat as unknown   as number;
-        const longitude: number = req.query.lon as unknown  as number;
+        const latitude: number  = req.query.lat as unknown as number;
+        const longitude: number = req.query.lon as unknown as number;
         const spotId: string    = req.query.spot_id as unknown as string;
-        const days              = req.query.days as unknown              as number;
+        const days              = req.query.days as unknown as number;
 
         if (!latitude || !longitude || !spotId) {
             console.log(`Received full screen update req with missing lat, lon, or spot id (${req.query.lat} - ${
