@@ -274,7 +274,8 @@ export async function renderTideChart(rawTides: SurflineTidesResponse[], width: 
         line : {
             shape : "spline",
             smoothing : 1.3,  // apparently 1.3 is highest value...? Defaults to smoothest if ommitted as well
-            // color : "black",
+            type : "solid",
+            width : 4,  // default is 2
         },
         type : "scatter",
     };
@@ -282,22 +283,46 @@ export async function renderTideChart(rawTides: SurflineTidesResponse[], width: 
     const figure = {
         data : [ tideTrace ],
         layout : {
+            title : {
+                text : "Tide Chart",
+                font : {
+                    size : 20,
+                },
+            },
             xaxis : {
                 autotick : false,
-                ticks : "outside",
+                ticks : "inside",
                 tick0 : todaysTides[0].timestamp.hour(),
-                dtick : 1.0,
+                dtick : 4.0,
                 showgrid : false,
+                tickfont : {
+                    size : 20,
+                },
+                title : {
+                    text : "Hour",
+                    font : {
+                        size : 15,
+                    },
+                },
             },
             yaxis : {
                 showgrid : false,
+                tickfont : {
+                    size : 20,
+                },
+                title : {
+                    text : "Height (m)",
+                    font : {
+                        size : 15,
+                    },
+                },
             },
             // Removes all of the padding while keeping the axis labels if around their default distance
             margin : {
-                l : 30,
-                t : 30,
+                l : 50,
+                t : 40,
                 r : 30,
-                b : 30,
+                b : 40,
             },
         }
     };
