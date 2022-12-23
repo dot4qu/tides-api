@@ -11,6 +11,7 @@ interface SurflineSurfObject {
 
 interface SurflineWaveResponse {
     timestamp: number|import("moment").Moment;
+    utcOffset: number;
     swells: any[];
     surf: SurflineSurfObject;
 }

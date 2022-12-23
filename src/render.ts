@@ -358,44 +358,77 @@ export async function renderTideChart(rawTides: SurflineTidesResponse[], width: 
     return await                convertJpegToRawPacked(chartFilepath);
 }
 
-export async function renderSwellChart(rawSwell: SurflineWaveResponse[], width: number, height: number):
+export async function renderSwellChart(rawSwells: SurflineWaveResponse[], width: number, height: number):
     Promise<string> {
-    // Switch timestamps received from server to moment objects
-    const rawSwellWithDates = rawSwell.map(x => ({...x, timestamp : moment((x.timestamp as number) * 1000)}));
-
-    const todaysDate = moment().dayOfYear();
-    const todaysSwell =
-        rawSwellWithDates.sort(x => x.timestamp.valueOf()).filter(x => x.timestamp.dayOfYear() == todaysDate);
+    // Switch timestamps received from server to moment objects. Epoch is timezone/offset-agnostic, so instantiate as
+    // UTC. Use utcOffset func to shift date to user's utc offset to correctly interpret day of year so we know which
+    // raw tide objects to filter before burning into chart.
+    const swellsWithResponseOffset =
+        rawSwells.map(x => ({...x, timestamp : moment.utc(((x.timestamp as number) * 1000)).utcOffset(x.utcOffset)}));
+    const responseDayOfYear: number = swellsWithResponseOffset[0].timestamp.dayOfYear();
+    const swellsSingleDay = swellsWithResponseOffset.filter(x => x.timestamp.dayOfYear() == responseDayOfYear);
 
     let swellTrace = {
-        x : todaysSwell.map(x => x.timestamp.hour() + x.timestamp.minute() / 60),
-        y : todaysSwell.map(x => (x.surf.max! + x.surf.min!) / 2),
+        x : swellsSingleDay.map(x => x.timestamp.hour() + x.timestamp.minute() / 60),
+        y : swellsSingleDay.map(x => (x.surf.max! + x.surf.min!) / 2),
         name : "Swell",
         type : "bar",
         marker : {
-            color : "rgb(0, 0, 0)",
+            color : "rgb(0, 0, 0)",  // default is blue
         },
     };
 
     const figure = {
         data : [ swellTrace ],
         layout : {
+            title : {
+                text : "Swell Chart",
+                font : {
+                    size : 20,
+                    color : "black",
+                },
+            },
             xaxis : {
                 autotick : false,
                 ticks : "none",
-                tick0 : todaysSwell[0].timestamp.hour(),
+                tick0 : swellsSingleDay[0].timestamp.hour(),
                 dtick : 1.0,
                 showgrid : false,
+                color : "black",
+                tickfont : {
+                    size : 15,
+                    color : "black",
+                },
+                title : {
+                    text : swellsSingleDay[0].timestamp.format("dddd MM/DD"),  // Friday 12/22, non-localized but eh
+                    font : {
+                        size : 15,
+                        color : "black",
+                    },
+                },
+                ticksuffix : "hr",
             },
             yaxis : {
                 showgrid : false,
+                color : "black",
+                tickfont : {
+                    size : 15,
+                    color : "black",
+                },
+                title : {
+                    text : "Height (m)",
+                    font : {
+                        size : 15,
+                        color : "black",
+                    },
+                },
             },
             // Removes all of the padding while keeping the axis labels if around their default distance
             margin : {
-                l : 30,
-                t : 30,
+                l : 50,
+                t : 40,
                 r : 30,
-                b : 30,
+                b : 40,
             },
         }
     };
