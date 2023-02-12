@@ -390,6 +390,7 @@ export async function renderSwellChart(xValues: string[],
             swellMinTrace,
         ],
         layout : {
+            showlegend : false,
             barmode : "overlay",
             title : {
                 text : "Swell Chart",
