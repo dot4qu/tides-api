@@ -129,6 +129,7 @@ export default function(): express.Router {
     });
 
     router.post("/ota/version_info", async (req: express.Request, res: express.Response) => {
+        console.log(req.body);
         if (!req.body || !req.body.current_version) {
             // Unproccessable Entity
             console.error(
@@ -168,7 +169,7 @@ export default function(): express.Router {
             // TODO :: regex validate this (or check from known available versions)
 
             const requestedVersionNumberStrs: string[] = queryStr.split(".");
-            const requestedBinaryPath = `${versionFilePath}/spot-check-embedded-${requestedVersionNumberStrs[0]}-${
+            const requestedBinaryPath = `${versionFilePath}/spot-check-firmware-${requestedVersionNumberStrs[0]}-${
                 requestedVersionNumberStrs[1]}-${requestedVersionNumberStrs[2]}.bin`;
 
             try {
@@ -194,7 +195,7 @@ export default function(): express.Router {
             }
 
             const currentVersionNumberStrs: string[] = versionFile.toString().trim().split(".");
-            const currentBinaryPath = `${versionFilePath}/spot-check-embedded-${currentVersionNumberStrs[0]}-${
+            const currentBinaryPath = `${versionFilePath}/spot-check-firmware-${currentVersionNumberStrs[0]}-${
                 currentVersionNumberStrs[1]}-${currentVersionNumberStrs[2]}.bin`;
 
             try {
