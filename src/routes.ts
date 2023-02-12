@@ -212,6 +212,7 @@ export default function(): express.Router {
         res.sendFile(binaryPath, {root : `${__dirname}/..`});
     });
 
+    /*
     router.get("/screen_update", async (req: express.Request, res: express.Response) => {
         const latitude: number  = req.query.lat as unknown as number;
         const longitude: number = req.query.lon as unknown as number;
@@ -257,6 +258,7 @@ export default function(): express.Router {
 
         res.download(`${__dirname}/../${render.rendersDir}/${renderFilename}`, "default_name_img.jpeg");
     });
+    */
 
     /*
      * For testing screen layout render when dev machine has no internet connection. Separate route to keep main handler
@@ -296,6 +298,7 @@ export default function(): express.Router {
         const rawTides = await surfline.getTidesBySpotId(spotId, 1);
         let                    tideChartFilepath: string;
         try {
+            // TODO :: pull out data logic like swell_chart handler below
             tideChartFilepath = await render.renderTideChart(rawTides, width, height);
         } catch (e) {
             return res.status(500).send("Failed to generate tide chart");
@@ -328,10 +331,49 @@ export default function(): express.Router {
             height = 200;
         }
 
-        const rawSwell = await surfline.getWavesBySpotId(spotId, 1, 1);
-        let                    swellChartFilepath: string;
+        const rawSwell: SurflineWaveResponse[] = await surfline.getWavesBySpotId(spotId, 7, 1);
+
+        // Switch timestamps received from server to moment objects. Epoch is timezone/offset-agnostic, so instantiate
+        // as UTC. Use utcOffset func to shift date to user's utc offset (returned in response, `x.utcOffset`) to
+        // correctly interpret day of year so we know which raw tide objects to filter before burning into chart.
+        const swellsWithResponseOffset = rawSwell.map(
+            x => ({...x, timestamp : moment.utc(((x.timestamp as number) * 1000)).utcOffset(x.utcOffset)}));
+
+        // Returns object with keys for every day of year receieved from api starting with today. Value is a
+        // DailySwellValues object with pretty str and the overall max/min for the day
+        const dailySwellMaxMins = swellsWithResponseOffset.reduce(
+            (aggregate: {[key: number]: DailySwellValues}, element: SurflineWaveResponse) => {
+                const currentDayMoment                                      = element.timestamp as moment.Moment;
+                const                                      currentDayOfYear = currentDayMoment.dayOfYear();
+                const                                      currentMax       = element.surf.max!;
+                const                                      currentMin       = element.surf.min!;
+
+                // If day of week isn't in aggregate yet, add it with max and mins. Otherwise only update max and min if
+                // currentelement is greater/less than existing for day
+                if (aggregate[currentDayOfYear]) {
+                    const dayMax                    = aggregate[currentDayOfYear].max;
+                    const dayMin                    = aggregate[currentDayOfYear].min;
+                    aggregate[currentDayOfYear].max = (currentMax! > dayMax) ? currentMax : dayMax;
+                    aggregate[currentDayOfYear].min = (currentMin! > dayMin) ? currentMin : dayMin;
+                } else {
+                    aggregate[currentDayOfYear] = {
+                        dayString : currentDayMoment.format("ddd DD"),
+                        max : element.surf.max!,
+                        min : element.surf.min!,
+                    };
+                }
+
+                return aggregate;
+            },
+            {});
+
+        const xValues    = Object.values(dailySwellMaxMins).map(x => x.dayString);
+        const yValuesMax = Object.values(dailySwellMaxMins).map(x => x.max);
+        const yValuesMin = Object.values(dailySwellMaxMins).map(x => x.min);
+
+        let swellChartFilepath: string;
         try {
-            swellChartFilepath = await render.renderSwellChart(rawSwell, width, height);
+            swellChartFilepath = await render.renderSwellChart(xValues, yValuesMax, yValuesMin, width, height);
         } catch (e) {
             return res.status(500).send("Failed to generate swell chart");
         }

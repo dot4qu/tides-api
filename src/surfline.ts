@@ -35,13 +35,14 @@ function getSurflineApiUrl(forecastType: SurflineForecastType, spotId: string, d
             break;
     }
 
+    console.log(SURFLINE_BASE_URL + forecastType + queryParams);
     return SURFLINE_BASE_URL + forecastType + queryParams;
 }
 
 export async function getTidesBySpotName(spotName: string = PACIFICA_SPOT_ID,
                                          days: number     = 3): Promise<SurflineTidesResponse[]> {
     const spotNameUppercase: string = spotName.toUpperCase();
-    let spotId: string              = PACIFICA_SPOT_ID;
+    let   spotId: string            = PACIFICA_SPOT_ID;
     if (SPOT_IDS_BY_NAME.hasOwnProperty(spotNameUppercase)) {
         spotId = SPOT_IDS_BY_NAME[spotNameUppercase];
     }
@@ -51,7 +52,7 @@ export async function getTidesBySpotName(spotName: string = PACIFICA_SPOT_ID,
 
 export async function getTidesBySpotId(spotId: string, days: number = 3): Promise<SurflineTidesResponse[]> {
     const url                               = getSurflineApiUrl(SurflineForecastType.TIDES, spotId, days, 0);
-    const unparsedRes                       = await                       fetch(url);
+    const unparsedRes                       = await fetch(url);
     const response: SurflineBaseApiResponse = await unparsedRes.json();
     return response.data.tides!;
 }
@@ -60,7 +61,7 @@ export async function getWavesBySpotName(spotName: string      = PACIFICA_SPOT_I
                                          days: number          = 3,
                                          intervalHours: number = 4): Promise<SurflineWaveResponse[]> {
     const spotNameUppercase: string = spotName.toUpperCase();
-    let spotId: string              = PACIFICA_SPOT_ID;
+    let   spotId: string            = PACIFICA_SPOT_ID;
     if (SPOT_IDS_BY_NAME.hasOwnProperty(spotNameUppercase)) {
         spotId = SPOT_IDS_BY_NAME[spotNameUppercase];
     }
@@ -71,7 +72,7 @@ export async function getWavesBySpotName(spotName: string      = PACIFICA_SPOT_I
 export async function getWavesBySpotId(spotId: string, days: number = 3, intervalHours: number = 4):
     Promise<SurflineWaveResponse[]> {
     const url                               = getSurflineApiUrl(SurflineForecastType.WAVE, spotId, days, intervalHours);
-    const unparsedRes                       = await                       fetch(url);
+    const unparsedRes                       = await fetch(url);
     const response: SurflineBaseApiResponse = await unparsedRes.json();
     return response.data.wave!!;
 }

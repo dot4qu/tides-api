@@ -91,6 +91,7 @@ async function convertJpegToRawPacked(jpegFilePath: string): Promise<string> {
     return rawChartFilepath;
 }
 
+/*
 export async function renderScreenFromData(temperature: number,
                                            windSpeed: number,
                                            windDir: string,
@@ -191,6 +192,7 @@ export async function renderScreenFromData(temperature: number,
     fs.writeFileSync(rendersDir + "/render.raw", Buffer.from(packedBuffer));
     return "render.raw";
 }
+*/
 
 // export async function renderScreenFromDataOffline(): Promise<string> {
 //     const screenCanvas  = createCanvas(screenWidthPx, screenHeightPx)
@@ -299,7 +301,6 @@ export async function renderTideChart(rawTides: SurflineTidesResponse[], width: 
                     size : 15,
                     color : "black",
                 },
-                ticksuffix : "hr",
                 title : {
                     text : tidesSingleDay[0].timestamp.format("dddd MM/DD"),  // Friday 12/22, non-localized but eh
                     font : {
@@ -358,29 +359,38 @@ export async function renderTideChart(rawTides: SurflineTidesResponse[], width: 
     return await                convertJpegToRawPacked(chartFilepath);
 }
 
-export async function renderSwellChart(rawSwells: SurflineWaveResponse[], width: number, height: number):
-    Promise<string> {
-    // Switch timestamps received from server to moment objects. Epoch is timezone/offset-agnostic, so instantiate as
-    // UTC. Use utcOffset func to shift date to user's utc offset to correctly interpret day of year so we know which
-    // raw tide objects to filter before burning into chart.
-    const swellsWithResponseOffset =
-        rawSwells.map(x => ({...x, timestamp : moment.utc(((x.timestamp as number) * 1000)).utcOffset(x.utcOffset)}));
-    const responseDayOfYear: number = swellsWithResponseOffset[0].timestamp.dayOfYear();
-    const swellsSingleDay = swellsWithResponseOffset.filter(x => x.timestamp.dayOfYear() == responseDayOfYear);
-
-    let swellTrace = {
-        x : swellsSingleDay.map(x => x.timestamp.hour() + x.timestamp.minute() / 60),
-        y : swellsSingleDay.map(x => (x.surf.max! + x.surf.min!) / 2),
-        name : "Swell",
+export async function renderSwellChart(xValues: string[],
+                                       yValuesMax: number[],
+                                       yValuesMin: number[],
+                                       width: number,
+                                       height: number): Promise<string> {
+    let swellMaxTrace = {
+        x : xValues,
+        y : yValuesMax,
+        name : "Max height",
         type : "bar",
         marker : {
-            color : "rgb(0, 0, 0)",  // default is blue
+            color : "rgba(0, 0, 0, 0.6)",
+        },
+    };
+
+    let swellMinTrace = {
+        x : xValues,
+        y : yValuesMin,
+        name : "Min height",
+        type : "bar",
+        marker : {
+            color : "rgba(0, 0, 0, 1.0)",
         },
     };
 
     const figure = {
-        data : [ swellTrace ],
+        data : [
+            swellMaxTrace,
+            swellMinTrace,
+        ],
         layout : {
+            barmode : "overlay",
             title : {
                 text : "Swell Chart",
                 font : {
@@ -389,24 +399,13 @@ export async function renderSwellChart(rawSwells: SurflineWaveResponse[], width:
                 },
             },
             xaxis : {
-                autotick : false,
                 ticks : "none",
-                tick0 : swellsSingleDay[0].timestamp.hour(),
-                dtick : 1.0,
                 showgrid : false,
                 color : "black",
                 tickfont : {
                     size : 15,
                     color : "black",
                 },
-                title : {
-                    text : swellsSingleDay[0].timestamp.format("dddd MM/DD"),  // Friday 12/22, non-localized but eh
-                    font : {
-                        size : 15,
-                        color : "black",
-                    },
-                },
-                ticksuffix : "hr",
             },
             yaxis : {
                 showgrid : false,

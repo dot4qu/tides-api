@@ -73,3 +73,9 @@ interface CurrentTide {
     height: number;
     rising: boolean;
 }
+
+interface DailySwellValues {
+    dayString: string;
+    max: number;
+    min: number;
+}
