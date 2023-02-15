@@ -91,183 +91,12 @@ async function convertJpegToRawPacked(jpegFilePath: string): Promise<string> {
     return rawChartFilepath;
 }
 
-/*
-export async function renderScreenFromData(temperature: number,
-                                           windSpeed: number,
-                                           windDir: string,
-                                           tideHeight: number,
-                                           tideIncreasing: boolean,
-                                           tideData: SurflineTidesResponse[],
-                                           swellData: SurflineWaveResponse[]) {
-    const screenCanvas  = createCanvas(screenWidthPx, screenHeightPx)
-    const screenContext = screenCanvas.getContext("2d");
-
-    screenContext.fillStyle = "#ffffff";
-    screenContext.fillRect(0, 0, screenWidthPx, screenHeightPx);
-
-    const now        = moment();
-    const timeString = now.format("h:mm a");
-    const dateString = now.format("dddd, MMMM Do YYYY");
-
-    // Large time
-    screenContext.font      = "60px Impact";
-    screenContext.textAlign = "left";
-    screenContext.fillStyle = "black"
-    screenContext.fillText(timeString, screenLeftPadPx + 40, screenTopPadPx + 100);
-
-    // Medium date
-    screenContext.font = "25px Impact";
-    screenContext.fillText(dateString, screenLeftPadPx + 40, screenTopPadPx + 100 + 40);
-
-    const temperatureString = `${temperature}º`;
-    const tideString        = `${tideHeight.toString()} ft ${(tideIncreasing ? 'rising' : 'falling')}`;
-    const windString = `${windSpeed} kt. ${windDir}`;
-    // const temperatureMetrics: TextMetrics = screenContext.measureText(temperatureString);
-    // const tideMetrics: TextMetrics        = screenContext.measureText(tideString);
-    // const windMetrics: TextMetrics        = screenContext.measureText(windString);
-    screenContext.font      = "25px Impact";
-    screenContext.textAlign = "right";
-    screenContext.fillText(temperatureString, screenWidthPx - screenRightPadPx - 40, screenTopPadPx + 80);
-    screenContext.fillText(tideString, screenWidthPx - screenRightPadPx - 40, screenTopPadPx + 80 + 35);
-    screenContext.fillText(windString, screenWidthPx - screenRightPadPx - 40, screenTopPadPx + 80 + 70);
-
-    // Bottom row forecast
-    let swellChartFilename: string = "";
-    try {
-        swellChartFilename = await renderSwellChart(swellData, 700, 200);
-    } catch (e) {
-        console.error(`Error rendering swell chart: ${e}`);
-    }
-
-    if (swellChartFilename) {
-        console.log(`Attempting to burn rendered swell chart at ${swellChartFilename} into screen jpeg`);
-        try {
-            const swellChartImage = await loadImage(`${__dirname}/../${rendersDir}/${swellChartFilename}`);
-            screenContext.drawImage(swellChartImage,
-                                    screenWidthPx / 2 - swellChartImage.width / 2,
-                                    screenHeightPx - screenBottomPadPx - 200 - swellChartImage.height);
-        } catch (e) {
-            console.error(`Error generating swell chart: ${e}`);
-
-            screenContext.font      = "20px Impact";
-            screenContext.textAlign = "center";
-            screenContext.fillText("No swell chart currently generated",
-                                   screenWidthPx / 2,
-                                   screenHeightPx - screenBottomPadPx - 400);
-        }
-    }
-
-    // Bottom row tides
-    let tideChartFilepath: string = "";
-    try {
-        tideChartFilepath = await renderTideChart(tideData, 700, 200);
-    } catch (e) {
-        console.error(`Error rendering tide chart: ${e}`);
-    }
-
-    if (tideChartFilepath) {
-        console.log(`Attempting to burn rendered tide chart at ${tideChartFilepath} into screen jpeg`);
-        try {
-            const tideChartImage = await loadImage(tideChartFilepath);
-            screenContext.drawImage(tideChartImage,
-                                    screenWidthPx / 2 - tideChartImage.width / 2,
-                                    screenHeightPx - screenBottomPadPx - tideChartImage.height);
-        } catch (e) {
-            console.error(`Error generating tide chart: ${e}`);
-
-            screenContext.font      = "20px Impact";
-            screenContext.textAlign = "center";
-            screenContext.fillText("No tide chart currently generated",
-                                   screenWidthPx / 2,
-                                   screenHeightPx - screenBottomPadPx - 200);
-        }
-    }
-
-    // TODO :: Remove or flag out jpeg generation for debugging
-    const jpegBuffer = screenCanvas.toBuffer('image/jpeg', {quality : 1.0});
-    fs.writeFileSync(rendersDir + "/render.jpeg", jpegBuffer);
-
-    const rawBuffer    = screenCanvas.toBuffer("raw");
-    const packedBuffer = toPackedBlackAndWhite(rawBuffer);
-    fs.writeFileSync(rendersDir + "/render.raw", Buffer.from(packedBuffer));
-    return "render.raw";
-}
-*/
-
-// export async function renderScreenFromDataOffline(): Promise<string> {
-//     const screenCanvas  = createCanvas(screenWidthPx, screenHeightPx)
-//     const screenContext = screenCanvas.getContext("2d");
-
-//     screenContext.fillStyle = "#ffffff";
-//     screenContext.fillRect(0, 0, screenWidthPx, screenHeightPx);
-
-//     const now        = moment();
-//     const timeString = now.format("h:mm a");
-//     const dateString = now.format("dddd, MMMM Do YYYY");
-
-//     // Large time
-//     screenContext.font      = "60px Impact";
-//     screenContext.textAlign = "left";
-//     screenContext.fillStyle = "black"
-//     screenContext.fillText(timeString, screenLeftPadPx + 40, screenTopPadPx + 100);
-
-//     // Medium date
-//     screenContext.font = "25px Impact";
-//     screenContext.fillText(dateString, screenLeftPadPx + 40, screenTopPadPx + 100 + 40);
-
-//     // Conditions
-//     const temperature                     = 76;
-//     const tideHeight                      = 1.7;
-//     const windSpeed                       = 5.4;
-//     const windDir                         = "NW";
-//     const tideIncreasing                  = true;
-//     const temperatureString               = `${temperature}º`;
-//     const tideString                      = `${tideHeight.toString()} ft ${(tideIncreasing ? 'rising' : 'falling')}`;
-//     const windString = `${windSpeed} kt. ${windDir}`;
-//     const temperatureMetrics: TextMetrics = screenContext.measureText(temperatureString);
-//     const tideMetrics: TextMetrics        = screenContext.measureText(tideString);
-//     // const windMetrics: TextMetrics        = screenContext.measureText(windString);
-//     screenContext.font      = "25px Impact";
-//     screenContext.textAlign = "right";
-//     screenContext.fillText(temperatureString, screenWidthPx - screenRightPadPx - 40, screenTopPadPx + 80);
-//     screenContext.fillText(tideString, screenWidthPx - screenRightPadPx - 40, screenTopPadPx + 80 + 35);
-//     screenContext.fillText(windString, screenWidthPx - screenRightPadPx - 40, screenTopPadPx + 80 + 70);
-
-//     const tideChartFilename: string = "test_tide_chart.jpeg";
-//     try {
-//         const tideChartImage = await loadImage(`${__dirname}/../${rendersDir}/${tideChartFilename}`);
-//         screenContext.drawImage(tideChartImage,
-//                                 screenWidthPx / 2 - tideChartImage.width / 2,
-//                                 screenHeightPx - screenBottomPadPx - tideChartImage.height);
-//     } catch (e) {
-//         console.error(`Error generating tide chart: ${e}`);
-
-//         screenContext.font      = "20px Impact";
-//         screenContext.textAlign = "center";
-//         screenContext.fillText("No tide chart currently generated",
-//                                screenWidthPx / 2,
-//                                screenHeightPx - screenBottomPadPx - 200);
-//     }
-
-//     const jpegBuffer = screenCanvas.toBuffer('image/jpeg', {quality : 1.0});
-
-//     fs.writeFileSync(rendersDir + "/offline_render.jpeg", jpegBuffer);
-//     return "offline_render.jpeg";
-// }
-
-export async function renderTideChart(rawTides: SurflineTidesResponse[], width: number, height: number):
+export async function
+renderTideChart(xValues: number[], yValues: number[], tick0: number, xAxisTitle: string, width: number, height: number):
     Promise<string> {
-    // Switch timestamps received from server to moment objects. Epoch is timezone/offset-agnostic, so instantiate as
-    // UTC. Use utcOffset func to shift date to user's utc offset to correctly interpret day of year so we know which
-    // raw tide objects to filter before burning into chart.
-    const tidesWithResponseOffset =
-        rawTides.map(x => ({...x, timestamp : moment.utc(((x.timestamp as number) * 1000)).utcOffset(x.utcOffset)}));
-    const responseDayOfYear: number = tidesWithResponseOffset[0].timestamp.dayOfYear();
-    const tidesSingleDay            = tidesWithResponseOffset.filter(x => x.timestamp.dayOfYear() == responseDayOfYear);
-
     let tideTrace = {
-        x : tidesSingleDay.map(x => x.timestamp.hour() + x.timestamp.minute() / 60),
-        y : tidesSingleDay.map(x => x.height),
+        x : xValues,
+        y : yValues,
         mode : "lines",
         name : "Tides",
         line : {
@@ -293,7 +122,7 @@ export async function renderTideChart(rawTides: SurflineTidesResponse[], width: 
             xaxis : {
                 autotick : false,
                 ticks : "inside",
-                tick0 : tidesSingleDay[0].timestamp.hour(),
+                tick0 : tick0,
                 dtick : 4.0,
                 showgrid : false,
                 color : "black",
@@ -302,7 +131,7 @@ export async function renderTideChart(rawTides: SurflineTidesResponse[], width: 
                     color : "black",
                 },
                 title : {
-                    text : tidesSingleDay[0].timestamp.format("dddd MM/DD"),  // Friday 12/22, non-localized but eh
+                    text : xAxisTitle,
                     font : {
                         size : 15,
                         color : "black",

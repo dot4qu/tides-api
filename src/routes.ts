@@ -214,64 +214,6 @@ export default function(): express.Router {
     });
 
     /*
-    router.get("/screen_update", async (req: express.Request, res: express.Response) => {
-        const latitude: number  = req.query.lat as unknown as number;
-        const longitude: number = req.query.lon as unknown as number;
-        const spotId: string    = req.query.spot_id as unknown as string;
-        const days              = req.query.days as unknown as number;
-
-        if (!latitude || !longitude || !spotId) {
-            console.log(`Received full screen update req with missing lat, lon, or spot id (${req.query.lat} - ${
-                req.query.lon} - ${spotId})`);
-            res.status(400).send("Missing request data");
-            return;
-        }
-
-        // Current tide height from surfline
-        const rawTides                                     = await surfline.getTidesBySpotId(spotId, days);
-        let                    currentTideObj: CurrentTide = getCurrentTideHeight(rawTides);
-
-        // Air temp, wind dir, windspeed from weather api
-        const weatherResponse: TidesResponse = await getWeather(latitude, longitude);
-        if (weatherResponse.errorMessage) {
-            return res.status(500).json(weatherResponse);
-        }
-        const windDirStr: string = degreesToDirStr(weatherResponse.data.wind.deg);
-
-        // Swell info from surfline
-        let rawSwell: SurflineWaveResponse[] = [];
-        if (req.query.spot_id) {
-            const spotId = req.query.spot_id as unknown as string;
-            rawSwell     = await                            surfline.getWavesBySpotId(spotId, days, 1);
-        } else if (req.query.spot_name) {
-            const spotName = req.query.spot_name as unknown as string;
-            rawSwell       = await                                surfline.getWavesBySpotName(spotName, days, 1);
-        }
-
-        // Render all info into screen
-        const renderFilename: string = await render.renderScreenFromData(weatherResponse.data.temperature,
-                                                                         weatherResponse.data.wind.speed,
-                                                                         windDirStr,
-                                                                         currentTideObj.height,
-                                                                         currentTideObj.rising,
-                                                                         rawTides,
-                                                                         rawSwell);
-
-        res.download(`${__dirname}/../${render.rendersDir}/${renderFilename}`, "default_name_img.jpeg");
-    });
-    */
-
-    /*
-     * For testing screen layout render when dev machine has no internet connection. Separate route to keep main handler
-     * logic clean.
-     */
-    // router.get("/screen_update_offline", async (req: express.Request, res: express.Response) => {
-    //     const renderFilename = await render.renderScreenFromDataOffline();
-    //     return res.download(`${__dirname}/../${render.rendersDir}/${renderFilename}`,
-    //     "default_name_offline_img.jpeg");
-    // });
-
-    /*
      * Render a 2 pixels-per-byte, black and white raw array of data and return it to caller
      */
     router.get("/tides_chart", async (req: express.Request, res: express.Response) => {
@@ -297,10 +239,24 @@ export default function(): express.Router {
 
         // Current tide height from surfline
         const rawTides = await surfline.getTidesBySpotId(spotId, 1);
-        let                    tideChartFilepath: string;
+
+        // Switch timestamps received from server to moment objects. Epoch is timezone/offset-agnostic, so instantiate
+        // as UTC. Use utcOffset func to shift date to user's utc offset to correctly interpret day of year so we know
+        // which raw tide objects to filter before burning into chart.
+        const tidesWithResponseOffset = rawTides.map(
+            x => ({...x, timestamp : moment.utc(((x.timestamp as number) * 1000)).utcOffset(x.utcOffset)}));
+        const responseDayOfYear: number = tidesWithResponseOffset[0].timestamp.dayOfYear();
+        const tidesSingleDay = tidesWithResponseOffset.filter(x => x.timestamp.dayOfYear() == responseDayOfYear);
+
+        const xValues: number[] = tidesSingleDay.map(x => x.timestamp.hour() + x.timestamp.minute() / 60);
+        const yValues: number[] = tidesSingleDay.map(x => x.height);
+        const tick0: number     = tidesSingleDay[0].timestamp.hour();
+        const xAxisTitle: string =
+            tidesSingleDay[0].timestamp.format("dddd MM/DD");  // Friday 12/22, non-localized but eh
+
+        let tideChartFilepath: string;
         try {
-            // TODO :: pull out data logic like swell_chart handler below
-            tideChartFilepath = await render.renderTideChart(rawTides, width, height);
+            tideChartFilepath = await render.renderTideChart(xValues, yValues, tick0, xAxisTitle, width, height);
         } catch (e) {
             return res.status(500).send("Failed to generate tide chart");
         }
