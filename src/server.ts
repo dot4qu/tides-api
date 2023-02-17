@@ -11,14 +11,20 @@ import router from "./routes";
 const app  = express();
 const port = 9443;
 
+app.use(bodyParser.json());
+
+// Logging must go after bodyparser in order to log post data
 app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const now = new Date();
-    console.log(
-        `[${twoDigits(now.getHours())}:${twoDigits(now.getMinutes())}:${twoDigits(now.getSeconds())}] ${req.url}`);
+    const now      = new Date();
+    let   postData = "";
+    if (req.method == "POST") {
+        postData = "- " + JSON.stringify(req.body);
+    }
+
+    console.log(`[${twoDigits(now.getHours())}:${twoDigits(now.getMinutes())}:${twoDigits(now.getSeconds())}] ${
+        req.url} ${postData}`);
     next();
 });
-
-app.use(bodyParser.json());
 
 // Must come before router to force all routes through function
 app.use((req, res, next) => authenticate(req, res, next));
