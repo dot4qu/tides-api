@@ -22,7 +22,7 @@ app.use((req: express.Request, res: express.Response, next: express.NextFunction
     }
 
     console.log(`[${twoDigits(now.getHours())}:${twoDigits(now.getMinutes())}:${twoDigits(now.getSeconds())}] ${
-        req.url} ${postData}`);
+        req.method} ${req.url} ${postData}`);
     next();
 });
 
