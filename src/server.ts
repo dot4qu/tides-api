@@ -4,6 +4,7 @@ import fs from "fs";
 import http from "http";
 import https from "https";
 
+import {authenticate} from "./auth-handler";
 import {twoDigits} from "./helpers";
 import router from "./routes";
 
@@ -18,6 +19,9 @@ app.use((req: express.Request, res: express.Response, next: express.NextFunction
 });
 
 app.use(bodyParser.json());
+
+// Must come before router to force all routes through function
+app.use((req, res, next) => authenticate(req, res, next));
 app.use(router());
 
 if (!process.env.OPENWEATHERMAP_API_KEY) {
@@ -37,17 +41,17 @@ if (process.env.DEPLOY_STAGE === "PROD") {
     const cert = fs.readFileSync(process.env.PROD_SSL_CERT_PATH);
     const ca   = fs.readFileSync(process.env.PROD_SSL_CA_CERT_PATH);
     creds      = {
-        key,
-        cert,
-        ca,
+             key,
+             cert,
+             ca,
     };
 } else {
     console.log("Running server locally using local self-signed cert");
     const localKey  = fs.readFileSync(__dirname + "/../spotcheck-selfsigned-key.pem", "utf-8");
     const localCert = fs.readFileSync(__dirname + "/../spotcheck-selfsigned-cert.pem", "utf-8");
     creds           = {
-        key : localKey,
-        cert : localCert,
+                  key : localKey,
+                  cert : localCert,
     };
 }
 

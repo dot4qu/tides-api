@@ -62,6 +62,7 @@ interface OpenWeatherMapResponse {
 
 interface VersionRequest {
     current_version: string;
+    device_id: string;
 }
 
 interface VersionResponse {
