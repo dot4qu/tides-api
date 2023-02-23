@@ -16,3 +16,5 @@ setup_env.sh
 *.jpg
 *.png
 *.raw
+
+temp_renders/

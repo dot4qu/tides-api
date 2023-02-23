@@ -3,6 +3,7 @@ import moment from "moment";
 import * as surfline from "./surfline";
 
 export const MONTHS = [ "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" ];
+export const rendersDir: string = "temp_renders";
 export enum SpotCheckRevision {
     Rev2,
     Rev3,
@@ -12,7 +13,7 @@ export function buildTideString(tides: SurflineTidesResponse[], revision: SpotCh
     let dailyTides: string[] = [];
     for (let tideObj of tides) {
         const tideDate = moment(tideObj.timestamp);
-        let formattedStr: string;
+        let   formattedStr: string;
         switch (revision) {
             case SpotCheckRevision.Rev2:
                 formattedStr = `${tideObj.type} at ${tideDate.hour()}:${twoDigits(tideDate.minute())}`;
@@ -38,10 +39,10 @@ export function buildTideString(tides: SurflineTidesResponse[], revision: SpotCh
 }
 
 export function buildSwellString(swellObjs: SurflineWaveResponse[], revision: SpotCheckRevision): string {
-    const swellDate          = moment(swellObjs[0].timestamp);
-    let dailySwell: string[] = [];
+    const swellDate            = moment(swellObjs[0].timestamp);
+    let   dailySwell: string[] = [];
     for (let swellObj of swellObjs) {
-        let formattedStr    = "";
+        let   formattedStr  = "";
         const swellDateTime = moment(swellObj.timestamp);
         switch (revision) {
             case SpotCheckRevision.Rev2:
@@ -130,8 +131,8 @@ export async function getWeather(latitude: number, longitude: number): Promise<T
     weatherResponse.wind.speed = Math.round(weatherResponse.wind.speed);
     const wind                 = weatherResponse.wind;
     retVal.data                = {
-        temperature,
-        wind,
+                       temperature,
+                       wind,
     };
 
     return retVal;

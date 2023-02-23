@@ -3,6 +3,7 @@ import {Router} from "express";
 import fs from 'fs';
 import moment from "moment";
 import fetch from "node-fetch";
+import path from "path";
 
 import {
     buildSwellString,
@@ -12,6 +13,7 @@ import {
     getTideExtremes,
     getWeather,
     MONTHS,
+    rendersDir,
     roundToMaxSingleDecimal,
     SpotCheckRevision
 } from "./helpers";
@@ -217,6 +219,13 @@ export default function(): express.Router {
      * Render a 2 pixels-per-byte, black and white raw array of data and return it to caller
      */
     router.get("/tides_chart", async (req: express.Request, res: express.Response) => {
+        let deviceId: string = req.query.device_id as unknown as string;
+        if (!deviceId) {
+            console.log(`Received tides_chart req with no device id, denying`);
+            res.status(403).send("Missing device_id")
+            return;
+        }
+
         let latitude: number  = req.query.lat as unknown as number;
         let longitude: number = req.query.lon as unknown as number;
         let spotId: string    = req.query.spot_id as unknown as string;
@@ -254,20 +263,44 @@ export default function(): express.Router {
         const xAxisTitle: string =
             tidesSingleDay[0].timestamp.format("dddd MM/DD");  // Friday 12/22, non-localized but eh
 
-        let tideChartFilepath: string;
+        const tideChartFilename = `tide_chart_${deviceId}.jpeg`;
+        let   generatedRawFilepath: string;
         try {
-            tideChartFilepath = await render.renderTideChart(xValues, yValues, tick0, xAxisTitle, width, height);
+            generatedRawFilepath =
+                await render.renderTideChart(tideChartFilename, xValues, yValues, tick0, xAxisTitle, width, height);
         } catch (e) {
             return res.status(500).send("Failed to generate tide chart");
         }
 
-        return res.download(tideChartFilepath, "tide_chart.raw")
+        return res.download(generatedRawFilepath, tideChartFilename, (err) => {
+            if (err) {
+                console.error(`Error in response download for swellchart: ${err}`);
+            }
+
+            fs.unlink(path.join(rendersDir, tideChartFilename), (err) => {
+                if (err) {
+                    console.error(`Error erasing image ${tideChartFilename} after sending, non-fatal`)
+                }
+            });
+            fs.unlink(generatedRawFilepath, (err) => {
+                if (err) {
+                    console.error(`Error erasing image ${tideChartFilename} after sending, non-fatal`)
+                }
+            });
+        });
     });
 
     /*
      * Render a 2 pixels-per-byte, black and white raw array of data and return it to caller
      */
     router.get("/swell_chart", async (req: express.Request, res: express.Response) => {
+        let deviceId: string = req.query.device_id as unknown as string;
+        if (!deviceId) {
+            console.log(`Received tides_chart req with no device id, denying`);
+            res.status(403).send("Missing device_id")
+            return;
+        }
+
         let latitude: number  = req.query.lat as unknown as number;
         let longitude: number = req.query.lon as unknown as number;
         let spotId: string    = req.query.spot_id as unknown as string;
@@ -328,14 +361,31 @@ export default function(): express.Router {
         const yValuesMax = Object.values(dailySwellMaxMins).map(x => x.max);
         const yValuesMin = Object.values(dailySwellMaxMins).map(x => x.min);
 
-        let swellChartFilepath: string;
+        const swellChartFilename = `swell_chart_${deviceId}.jpeg`;
+        let   generatedRawFilepath: string;
         try {
-            swellChartFilepath = await render.renderSwellChart(xValues, yValuesMax, yValuesMin, width, height);
+            generatedRawFilepath =
+                await render.renderSwellChart(swellChartFilename, xValues, yValuesMax, yValuesMin, width, height);
         } catch (e) {
             return res.status(500).send("Failed to generate swell chart");
         }
 
-        return res.download(swellChartFilepath, "swell_chart.raw")
+        return res.download(generatedRawFilepath, swellChartFilename, (err) => {
+            if (err) {
+                console.error(`Error in response download for swellchart: ${err}`);
+            }
+
+            fs.unlink(path.join(rendersDir, swellChartFilename), (err) => {
+                if (err) {
+                    console.error(`Error erasing image ${swellChartFilename} after sending, non-fatal`)
+                }
+            });
+            fs.unlink(generatedRawFilepath, (err) => {
+                if (err) {
+                    console.error(`Error erasing image ${swellChartFilename} after sending, non-fatal`)
+                }
+            });
+        });
     });
 
     return router;
