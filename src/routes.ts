@@ -217,7 +217,11 @@ export default function(): express.Router {
 
     /*
      * Render a 2 pixels-per-byte, black and white raw array of data and return it to caller
+     * Test curl (spot_id only thing used for spot, lat/lon don't matter):
      */
+    // clang-format off
+    // curl -k -X GET "https://localhost:9443/swell_chart?lat=XX&lon=YY&spot_id=5842041f4e65fad6a770882b&width=WW&h=HH&device_id=ff-ff-ff-ff-ff-ff" > /dev/null
+    // clang-format on
     router.get("/tides_chart", async (req: express.Request, res: express.Response) => {
         let deviceId: string = req.query.device_id as unknown as string;
         if (!deviceId) {
@@ -292,7 +296,11 @@ export default function(): express.Router {
 
     /*
      * Render a 2 pixels-per-byte, black and white raw array of data and return it to caller
+     * Test curl (spot_id only thing used for spot, lat/lon don't matter):
      */
+    // clang-format off
+    // curl -k -X GET "https://localhost:9443/swell_chart?lat=XX&lon=YY&spot_id=5842041f4e65fad6a770882b&width=WW&h=HH&device_id=ff-ff-ff-ff-ff-ff" > /dev/null
+    // clang-format on
     router.get("/swell_chart", async (req: express.Request, res: express.Response) => {
         let deviceId: string = req.query.device_id as unknown as string;
         if (!deviceId) {
