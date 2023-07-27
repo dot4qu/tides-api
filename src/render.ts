@@ -3,6 +3,8 @@ import fs from "fs";
 import moment from "moment";
 import path from "path";
 
+import {rendersDir} from "./helpers";
+
 const plotly = require("plotly")("second.string", "ECFumSwhQNCSasct0Owv");
 
 import {buildSwellString, buildTideString, getTideExtremes, SpotCheckRevision} from "./helpers";
@@ -13,8 +15,6 @@ const screenLeftPadPx: number   = 10;
 const screenTopPadPx: number    = 15;
 const screenRightPadPx: number  = 10;
 const screenBottomPadPx: number = 15;
-
-export const rendersDir: string = "temp_renders";
 
 /*
  * Weights them all (almost) equally which isn't how the eye perceives them but this is fine
@@ -91,9 +91,13 @@ async function convertJpegToRawPacked(jpegFilePath: string): Promise<string> {
     return rawChartFilepath;
 }
 
-export async function
-renderTideChart(xValues: number[], yValues: number[], tick0: number, xAxisTitle: string, width: number, height: number):
-    Promise<string> {
+export async function renderTideChart(filename: string,
+                                      xValues: number[],
+                                      yValues: number[],
+                                      tick0: number,
+                                      xAxisTitle: string,
+                                      width: number,
+                                      height: number): Promise<string> {
     let tideTrace = {
         x : xValues,
         y : yValues,
@@ -177,7 +181,7 @@ renderTideChart(xValues: number[], yValues: number[], tick0: number, xAxisTitle:
             }
 
             // Kick off stream of image piped to file but don't resolve promise until full stream written
-            const filepath        = `${__dirname}/../${rendersDir}/test_tide_chart.jpeg`;
+            const filepath        = `${__dirname}/../${rendersDir}/${filename}`;
             const chartFileStream = fs.createWriteStream(filepath);
             const pipeStream      = imageStream.pipe(chartFileStream);
             pipeStream.on("finish", () => resolve(filepath));
@@ -188,7 +192,8 @@ renderTideChart(xValues: number[], yValues: number[], tick0: number, xAxisTitle:
     return await                convertJpegToRawPacked(chartFilepath);
 }
 
-export async function renderSwellChart(xValues: string[],
+export async function renderSwellChart(filename: string,
+                                       xValues: string[],
                                        yValuesMax: number[],
                                        yValuesMin: number[],
                                        width: number,
@@ -276,10 +281,10 @@ export async function renderSwellChart(xValues: string[],
             }
 
             // Kick off stream of image piped to file but don't resolve promise until full stream written
-            const filename        = `${__dirname}/../${rendersDir}/test_swell_chart.jpeg`;
-            const chartFileStream = fs.createWriteStream(filename);
+            const filepath        = `${__dirname}/../${rendersDir}/${filename}`;
+            const chartFileStream = fs.createWriteStream(filepath);
             const pipeStream      = imageStream.pipe(chartFileStream);
-            pipeStream.on("finish", () => resolve(filename));
+            pipeStream.on("finish", () => resolve(filepath));
         });
     });
 

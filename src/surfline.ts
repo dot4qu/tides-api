@@ -35,7 +35,7 @@ function getSurflineApiUrl(forecastType: SurflineForecastType, spotId: string, d
             break;
     }
 
-    console.log(SURFLINE_BASE_URL + forecastType + queryParams);
+    // console.log(SURFLINE_BASE_URL + forecastType + queryParams);
     return SURFLINE_BASE_URL + forecastType + queryParams;
 }
 
