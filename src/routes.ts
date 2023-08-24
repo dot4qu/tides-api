@@ -329,7 +329,9 @@ export default function(): express.Router {
             height = 200;
         }
 
-        const rawSwell: SurflineWaveResponse[] = await surfline.getWavesBySpotId(spotId, 7, 1);
+        // Surfline updated API to finally enforce premium limits with permissions, which means max days requestable without
+        // an premium `accessToken` query param is 5
+        const rawSwell: SurflineWaveResponse[] = await surfline.getWavesBySpotId(spotId, 5, 1);
 
         // Switch timestamps received from server to moment objects. Epoch is timezone/offset-agnostic, so instantiate
         // as UTC. Use utcOffset func to shift date to user's utc offset (returned in response, `x.utcOffset`) to
