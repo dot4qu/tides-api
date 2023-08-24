@@ -281,6 +281,7 @@ export default function(): express.Router {
                 console.error(`Error in response download for swellchart: ${err}`);
             }
 
+            /*
             fs.unlink(path.join(rendersDir, tideChartFilename), (err) => {
                 if (err) {
                     console.error(`Error erasing image ${tideChartFilename} after sending, non-fatal`)
@@ -291,6 +292,7 @@ export default function(): express.Router {
                     console.error(`Error erasing image ${tideChartFilename} after sending, non-fatal`)
                 }
             });
+            */
         });
     });
 
@@ -329,8 +331,8 @@ export default function(): express.Router {
             height = 200;
         }
 
-        // Surfline updated API to finally enforce premium limits with permissions, which means max days requestable without
-        // an premium `accessToken` query param is 5
+        // Surfline updated API to finally enforce premium limits with permissions, which means max days requestable
+        // without an premium `accessToken` query param is 5
         const rawSwell: SurflineWaveResponse[] = await surfline.getWavesBySpotId(spotId, 5, 1);
 
         // Switch timestamps received from server to moment objects. Epoch is timezone/offset-agnostic, so instantiate
@@ -385,6 +387,7 @@ export default function(): express.Router {
                 console.error(`Error in response download for swellchart: ${err}`);
             }
 
+            /*
             fs.unlink(path.join(rendersDir, swellChartFilename), (err) => {
                 if (err) {
                     console.error(`Error erasing image ${swellChartFilename} after sending, non-fatal`)
@@ -395,6 +398,7 @@ export default function(): express.Router {
                     console.error(`Error erasing image ${swellChartFilename} after sending, non-fatal`)
                 }
             });
+            */
         });
     });
 

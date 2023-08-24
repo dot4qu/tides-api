@@ -117,27 +117,27 @@ export async function renderTideChart(filename: string,
         data : [ tideTrace ],
         layout : {
             title : {
-                text : "Tide Chart",
-                font : {
-                    size : 20,
-                    color : "black",
-                },
+                text : "<b>Tide Chart</b>",
+                font : {size : 20, color : "black"},
             },
             xaxis : {
                 autotick : false,
-                ticks : "inside",
                 tick0 : tick0,
+                tickprefix : "<b>",
+                ticksuffix : "</b>",
                 dtick : 4.0,
-                showgrid : false,
+                showgrid : true,
+                showline : true,
+                zeroline : true,
                 color : "black",
                 tickfont : {
-                    size : 15,
+                    size : 18,
                     color : "black",
                 },
                 title : {
-                    text : xAxisTitle,
+                    text : `<b>${xAxisTitle}</b>`,
                     font : {
-                        size : 15,
+                        size : 18,
                         color : "black",
                     },
                 },
@@ -145,24 +145,27 @@ export async function renderTideChart(filename: string,
             yaxis : {
                 showgrid : false,
                 color : "black",
+                showline : true,
+                tickprefix : "<b>",
+                ticksuffix : "</b>",
                 tickfont : {
-                    size : 15,
+                    size : 18,
                     color : "black",
                 },
                 title : {
-                    text : "Height (m)",
+                    text : "<b>Height (m)</b>",
                     font : {
-                        size : 15,
+                        size : 18,
                         color : "black",
                     },
                 },
             },
             // Removes all of the padding while keeping the axis labels if around their default distance
             margin : {
-                l : 50,
+                l : 55,
                 t : 40,
                 r : 30,
-                b : 40,
+                b : 50,
             },
         }
     };
@@ -227,7 +230,7 @@ export async function renderSwellChart(filename: string,
             showlegend : false,
             barmode : "overlay",
             title : {
-                text : "Swell Chart",
+                text : "<b>Swell Chart</b>",
                 font : {
                     size : 20,
                     color : "black",
@@ -235,34 +238,40 @@ export async function renderSwellChart(filename: string,
             },
             xaxis : {
                 ticks : "none",
+                tickprefix : "<b>",
+                ticksuffix : "</b>",
                 showgrid : false,
+                showline : true,
                 color : "black",
                 tickfont : {
-                    size : 15,
+                    size : 18,
                     color : "black",
                 },
             },
             yaxis : {
                 showgrid : false,
+                showline : true,
                 color : "black",
+                tickprefix : "<b>",
+                ticksuffix : "</b>",
                 tickfont : {
-                    size : 15,
+                    size : 18,
                     color : "black",
                 },
                 title : {
-                    text : "Height (m)",
+                    text : "<b>Height (m)</b>",
                     font : {
-                        size : 15,
+                        size : 18,
                         color : "black",
                     },
                 },
             },
             // Removes all of the padding while keeping the axis labels if around their default distance
             margin : {
-                l : 50,
+                l : 55,
                 t : 40,
                 r : 30,
-                b : 40,
+                b : 30,
             },
         }
     };
