@@ -3,6 +3,7 @@ import express from "express";
 import fs from "fs";
 import http from "http";
 import https from "https";
+import moment from "moment";
 
 import {authenticate} from "./auth-handler";
 import {twoDigits} from "./helpers";
@@ -15,14 +16,14 @@ app.use(bodyParser.json());
 
 // Logging must go after bodyparser in order to log post data
 app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const now      = new Date();
+    const now      = moment();
     let   postData = "";
     if (req.method == "POST") {
         postData = "- " + JSON.stringify(req.body);
     }
 
-    console.log(`[${twoDigits(now.getHours())}:${twoDigits(now.getMinutes())}:${twoDigits(now.getSeconds())}] ${
-        req.method} ${req.url} ${postData}`);
+    console.log(`[${twoDigits(now.date())}.${twoDigits(now.month())}.${now.year()} ${twoDigits(now.hour())}:${
+        twoDigits(now.minute())}:${twoDigits(now.second())}] ${req.method} ${req.url} ${postData}`);
     next();
 });
 
@@ -47,17 +48,17 @@ if (process.env.DEPLOY_STAGE === "PROD") {
     const cert = fs.readFileSync(process.env.PROD_SSL_CERT_PATH);
     const ca   = fs.readFileSync(process.env.PROD_SSL_CA_CERT_PATH);
     creds      = {
-             key,
-             cert,
-             ca,
+        key,
+        cert,
+        ca,
     };
 } else {
     console.log("Running server locally using local self-signed cert");
     const localKey  = fs.readFileSync(__dirname + "/../spotcheck-selfsigned-key.pem", "utf-8");
     const localCert = fs.readFileSync(__dirname + "/../spotcheck-selfsigned-cert.pem", "utf-8");
     creds           = {
-                  key : localKey,
-                  cert : localCert,
+        key : localKey,
+        cert : localCert,
     };
 }
 
