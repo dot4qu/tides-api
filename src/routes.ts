@@ -8,6 +8,10 @@ import path from "path";
 import {
     buildSwellString,
     buildTideString,
+    defaultPlotlyErrorSwellChartFilepath,
+    defaultPlotlyErrorTideChartFilepath,
+    defaultSurflineSwellErrorChartFilepath,
+    defaultSurflineTideErrorChartFilepath,
     degreesToDirStr,
     getCurrentTideHeight,
     getTideExtremes,
@@ -15,13 +19,13 @@ import {
     MONTHS,
     rendersDir,
     roundToMaxSingleDecimal,
-    SpotCheckRevision
+    SpotCheckRevision,
+    versionFilePath,
 } from "./helpers";
 import * as render   from "./render";
 import * as surfline from "./surfline";
 
-const fsPromises      = fs.promises;
-const versionFilePath = "./fw_versions";
+const fsPromises = fs.promises;
 
 export default function(): express.Router {
     const router = Router();
@@ -29,6 +33,7 @@ export default function(): express.Router {
     router.get("/health",
                (req: express.Request, res: express.Response) => { return res.send("surviving not thriving"); });
 
+    /*
     router.get("/tides", async (req: express.Request, res: express.Response) => {
         const days = req.query.days as unknown as number;
         throw new Error("hi mom!");
@@ -130,6 +135,7 @@ export default function(): express.Router {
 
         return res.json(responseObj);
     });
+    */
 
     router.post("/ota/version_info", async (req: express.Request, res: express.Response) => {
         console.log(req.body);
@@ -221,7 +227,7 @@ export default function(): express.Router {
      * Test curl (spot_id only thing used for spot, lat/lon don't matter):
      */
     // clang-format off
-    // curl -k -X GET "https://localhost:9443/swell_chart?lat=XX&lon=YY&spot_id=5842041f4e65fad6a770882b&width=WW&h=HH&device_id=ff-ff-ff-ff-ff-ff" > /dev/null
+    // curl -k -X GET "https://localhost:9443/tides_chart?lat=XX&lon=YY&spot_id=5842041f4e65fad6a770882b&width=WW&h=HH&device_id=ff-ff-ff-ff-ff-ff" > /dev/null
     // clang-format on
     router.get("/tides_chart", async (req: express.Request, res: express.Response) => {
         let deviceId: string = req.query.device_id as unknown as string;
@@ -252,7 +258,20 @@ export default function(): express.Router {
         }
 
         // Current tide height from surfline
-        const rawTides = await surfline.getTidesBySpotId(spotId, 1);
+        let rawTides = null;
+        try {
+            rawTides = await surfline.getTidesBySpotId(spotId, 1);
+        } catch (err) {
+            const errCast = err as Error;
+            // Surfline request failed for some reason (straight request, no parsing done), return placeholder image
+            console.error(`Request to surfline failed, returning succes code w/ error text placeholder chart - ${
+                errCast.name}: ${errCast.message}`);
+            return res.download(defaultSurflineTideErrorChartFilepath, "surfline_tide_err.raw", (err) => {
+                if (err) {
+                    console.error(`Error in response download for default surfline tide err chart: ${errCast}`);
+                }
+            });
+        }
 
         // Switch timestamps received from server to moment objects. Epoch is timezone/offset-agnostic, so instantiate
         // as UTC. Use utcOffset func to shift date to user's utc offset to correctly interpret day of year so we know
@@ -282,11 +301,15 @@ export default function(): express.Router {
                 console.error(`Error in response download for swellchart: ${err}`);
             }
 
+            // Delete human-viewable JPEG by joining original jpeg filename with the known path to the renders dir
             fs.unlink(path.join(rendersDir, tideChartFilename), (err) => {
                 if (err) {
                     console.error(`Error erasing image ${tideChartFilename} after sending, non-fatal`)
                 }
             });
+
+            // Delete the RAW image that was returned to the client with the full filpath + filename returned by the
+            // render function
             fs.unlink(generatedRawFilepath, (err) => {
                 if (err) {
                     console.error(`Error erasing image ${tideChartFilename} after sending, non-fatal`)
@@ -334,9 +357,10 @@ export default function(): express.Router {
         // without an premium `accessToken` query param is 5
         const rawSwell: SurflineWaveResponse[] = await surfline.getWavesBySpotId(spotId, 5, 1);
 
-        // Switch timestamps received from server to moment objects. Epoch is timezone/offset-agnostic, so instantiate
-        // as UTC. Use utcOffset func to shift date to user's utc offset (returned in response, `x.utcOffset`) to
-        // correctly interpret day of year so we know which raw tide objects to filter before burning into chart.
+        // Switch timestamps received from server to moment objects. Epoch is timezone/offset-agnostic, so
+        // instantiate as UTC. Use utcOffset func to shift date to user's utc offset (returned in response,
+        // `x.utcOffset`) to correctly interpret day of year so we know which raw tide objects to filter before
+        // burning into chart.
         const swellsWithResponseOffset = rawSwell.map(
             x => ({...x, timestamp : moment.utc(((x.timestamp as number) * 1000)).utcOffset(x.utcOffset)}));
 
@@ -349,8 +373,8 @@ export default function(): express.Router {
                 const                                      currentMax       = element.surf.max!;
                 const                                      currentMin       = element.surf.min!;
 
-                // If day of week isn't in aggregate yet, add it with max and mins. Otherwise only update max and min if
-                // currentelement is greater/less than existing for day
+                // If day of week isn't in aggregate yet, add it with max and mins. Otherwise only update max and
+                // min if currentelement is greater/less than existing for day
                 if (aggregate[currentDayOfYear]) {
                     const dayMax                    = aggregate[currentDayOfYear].max;
                     const dayMin                    = aggregate[currentDayOfYear].min;
@@ -404,5 +428,69 @@ export default function(): express.Router {
                       res: express.Response,
                       next: express.NextFunction) => { throw new Error("test_error endpoint"); });
 
+    router.get("/tides_error_chart", async (req: express.Request, res: express.Response) => {
+        let deviceId: string = req.query.device_id as unknown as string;
+        if (!deviceId) {
+            console.log(`Received tides_chart req with no device id, denying`);
+            res.status(403).send("Missing device_id")
+            return;
+        }
+
+        const xValues: number[]  = Array.from(Array(24).keys());
+        const yValues: number[]  = Array(24).fill(0);
+        yValues[0]               = -1;
+        yValues[23]              = 1;
+        const tick0: number      = 0;
+        const xAxisTitle: string = "";
+
+        const tideChartFilename = `tide_chart_${deviceId}.jpeg`;
+        let   generatedRawFilepath: string;
+        try {
+            generatedRawFilepath =
+                await render.renderTideChart(tideChartFilename, xValues, yValues, tick0, xAxisTitle, 700, 200);
+        } catch (e) {
+            return res.status(500).send("Failed to generate tide chart");
+        }
+
+        return res.download(generatedRawFilepath, tideChartFilename, (err) => {
+            if (err) {
+                console.error(`Error in response download for swellchart: ${err}`);
+            }
+        });
+    });
+
+    router.get("/swell_error_chart", async (req: express.Request, res: express.Response) => {
+        let deviceId: string = req.query.device_id as unknown as string;
+        if (!deviceId) {
+            console.log(`Received tides_chart req with no device id, denying`);
+            res.status(403).send("Missing device_id")
+            return;
+        }
+
+        const yValuesMax: number[] = [];
+
+        const xnums                = Array.from(Array(5).keys());
+        const xValues: string[]    = xnums.map(x => x.toString());
+        const yValuesMin: number[] = Array(5).fill(0);
+        yValuesMin[0]              = 1;
+        yValuesMin[4]              = 1;
+        const tick0: number        = 0;
+        const xAxisTitle: string   = "";
+
+        const swellChartFilename = `swell_chart_${deviceId}.jpeg`;
+        let   generatedRawFilepath: string;
+        try {
+            generatedRawFilepath =
+                await render.renderSwellChart(swellChartFilename, xValues, yValuesMax, yValuesMin, 700, 200);
+        } catch (e) {
+            return res.status(500).send("Failed to generate swell chart");
+        }
+
+        return res.download(generatedRawFilepath, swellChartFilename, (err) => {
+            if (err) {
+                console.error(`Error in response download for swellchart: ${err}`);
+            }
+        });
+    });
     return router;
 }

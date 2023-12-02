@@ -1,9 +1,16 @@
 import moment from "moment";
+import path from "path";
 
 import * as surfline from "./surfline";
 
 export const MONTHS = [ "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" ];
-export const rendersDir: string = "temp_renders";
+export const rendersDir: string                     = "temp_renders";
+export const versionFilePath                        = "./fw_versions";
+export const defaultSurflineTideErrorChartFilepath  = path.join(rendersDir, "default_surfline_tide_error_chart.raw");
+export const defaultSurflineSwellErrorChartFilepath = path.join(rendersDir, "default_surfline_swell_error_chart.raw");
+export const defaultPlotlyErrorTideChartFilepath    = path.join(rendersDir, "default_plotly_error_tide_chart.raw");
+export const defaultPlotlyErrorSwellChartFilepath   = path.join(rendersDir, "default_plotly_error_swell_chart.raw");
+
 export enum SpotCheckRevision {
     Rev2,
     Rev3,
@@ -131,8 +138,8 @@ export async function getWeather(latitude: number, longitude: number): Promise<T
     weatherResponse.wind.speed = Math.round(weatherResponse.wind.speed);
     const wind                 = weatherResponse.wind;
     retVal.data                = {
-                       temperature,
-                       wind,
+        temperature,
+        wind,
     };
 
     return retVal;
