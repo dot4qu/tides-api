@@ -108,7 +108,7 @@ export async function renderTideChart(filename: string,
             smoothing : 1.3,  // apparently 1.3 is highest value...? Defaults to smoothest if ommitted as well
             type : "solid",
             width : 4,        // default is 2
-            color : "white",  // default is blue
+            color : "black",  // default is blue
         },
         type : "scatter",
     };
@@ -146,7 +146,7 @@ export async function renderTideChart(filename: string,
                 showgrid : false,
                 color : "black",
                 showline : true,
-                zeroline : false,
+                zeroline : true,
                 tickprefix : "<b>",
                 ticksuffix : "</b>",
                 tickfont : {
@@ -168,30 +168,6 @@ export async function renderTideChart(filename: string,
                 r : 30,
                 b : 50,
             },
-            annotations : [
-                {
-                    text : "Error rendering tide data for chart",
-                    font : {
-                        size : 16,
-                        color : "black",
-                    },
-                    x : 12,
-                    y : 0.25,
-                    textangle : 0,
-                    showarrow : false,
-                },
-                {
-                    text : "Device retries daily, reboot device to force retry",
-                    font : {
-                        size : 14,
-                        color : "black",
-                    },
-                    x : 12,
-                    y : -0.25,
-                    textangle : 0,
-                    showarrow : false,
-                },
-            ],
         },
     };
 
@@ -226,6 +202,16 @@ export async function renderSwellChart(filename: string,
                                        yValuesMin: number[],
                                        width: number,
                                        height: number): Promise<string> {
+    let swellMaxTrace = {
+        x : xValues,
+        y : yValuesMax,
+        name : "Max height",
+        type : "bar",
+        marker : {
+            color : "rgba(0, 0, 0, 0.6)",
+        },
+    };
+
     let swellMinTrace = {
         x : xValues,
         y : yValuesMin,
@@ -238,11 +224,12 @@ export async function renderSwellChart(filename: string,
 
     const figure = {
         data : [
+            swellMaxTrace,
             swellMinTrace,
         ],
         layout : {
             showlegend : false,
-            // barmode : "overlay",
+            barmode : "overlay",
             title : {
                 text : "<b>Swell Chart</b>",
                 font : {
@@ -259,13 +246,12 @@ export async function renderSwellChart(filename: string,
                 color : "black",
                 tickfont : {
                     size : 18,
-                    color : "white",
+                    color : "black",
                 },
             },
             yaxis : {
                 showgrid : false,
                 zeroline : false,
-                tick0 : 0,
                 showline : true,
                 color : "black",
                 tickprefix : "<b>",
@@ -289,30 +275,6 @@ export async function renderSwellChart(filename: string,
                 r : 30,
                 b : 30,
             },
-            annotations : [
-                {
-                    text : "Error fetching swell data from external service",
-                    font : {
-                        size : 16,
-                        color : "black",
-                    },
-                    x : 2,
-                    y : 0.6,
-                    textangle : 0,
-                    showarrow : false,
-                },
-                {
-                    text : "Device retries every 5 hours, reboot device to force retry",
-                    font : {
-                        size : 14,
-                        color : "black",
-                    },
-                    x : 2,
-                    y : 0.4,
-                    textangle : 0,
-                    showarrow : false,
-                },
-            ],
         }
     };
 
