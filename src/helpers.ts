@@ -4,12 +4,16 @@ import path from "path";
 import * as surfline from "./surfline";
 
 export const MONTHS = [ "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" ];
-export const rendersDir: string                     = "temp_renders";
-export const versionFilePath                        = "./fw_versions";
-export const defaultSurflineTideErrorChartFilepath  = path.join(rendersDir, "default_surfline_tide_error_chart.raw");
-export const defaultSurflineSwellErrorChartFilepath = path.join(rendersDir, "default_surfline_swell_error_chart.raw");
-export const defaultPlotlyErrorTideChartFilepath    = path.join(rendersDir, "default_plotly_error_tide_chart.raw");
-export const defaultPlotlyErrorSwellChartFilepath   = path.join(rendersDir, "default_plotly_error_swell_chart.raw");
+export const rendersDir: string        = "temp_renders";
+export const defaultRendersDir: string = "temp_renders";
+export const versionFilePath           = "./fw_versions";
+export const defaultSurflineTideErrorChartFilepath =
+    path.join(defaultRendersDir, "default_surfline_tide_error_chart.raw");
+export const defaultSurflineSwellErrorChartFilepath =
+    path.join(defaultRendersDir, "default_surfline_swell_error_chart.raw");
+export const defaultPlotlyErrorTideChartFilepath = path.join(defaultRendersDir, "default_plotly_error_tide_chart.raw");
+export const defaultPlotlyErrorSwellChartFilepath =
+    path.join(defaultRendersDir, "default_plotly_error_swell_chart.raw");
 
 export enum SpotCheckRevision {
     Rev2,
