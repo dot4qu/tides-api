@@ -31,6 +31,7 @@ export default function(): express.Router {
 
     router.get("/tides", async (req: express.Request, res: express.Response) => {
         const days = req.query.days as unknown as number;
+        throw new Error("hi mom!");
 
         let rawTides: SurflineTidesResponse[] = [];
         if (req.query.spot_id) {
@@ -397,6 +398,11 @@ export default function(): express.Router {
             });
         });
     });
+
+    router.get("/test_error",
+               async (req: express.Request,
+                      res: express.Response,
+                      next: express.NextFunction) => { throw new Error("test_error endpoint"); });
 
     return router;
 }

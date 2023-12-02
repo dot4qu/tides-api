@@ -1,3 +1,7 @@
+// This automagically patches all express handlers to properly pass errors in async handlers to the global error handler
+// middleware that we've overriden (just like what happens out of the box from express with non-async handlers)
+import "express-async-errors";
+
 import bodyParser from "body-parser";
 import express from "express";
 import fs from "fs";
@@ -27,9 +31,21 @@ app.use((req: express.Request, res: express.Response, next: express.NextFunction
     next();
 });
 
-// Must come before router to force all routes through function
+// Auth must come before router to force all routes to auth before their standard endpoint handlers
 app.use((req, res, next) => authenticate(req, res, next));
 app.use(router());
+
+/*
+ * Global error handler since we want custom handling for non-caught exceptions (default Express handler will 500
+ * everything but we don't want that behavior if, for example, the plotly image failed to generate or surfline API
+ * response is malformed. 500s from the server represent no server connection at all to the embedded device and will
+ * kick it into offline mode. We want to handle the situation of 'server up, support services down' here, so device can
+ * happily/unknowingly render the placeholders we give it
+ */
+app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error(`UNHANDLED EXCEPTION IN EXPRESS CODE! Type: ${err.name}, Message: ${err.message}`);
+    return res.status(200).send();
+});
 
 if (!process.env.OPENWEATHERMAP_API_KEY) {
     console.log("No OpenWeatherMap API key env variable set, did you source setup_env.sh?");
