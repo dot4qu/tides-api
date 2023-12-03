@@ -130,7 +130,6 @@ export async function getWeather(latitude: number, longitude: number): Promise<W
     const weatherReq = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${
         longitude}&appid=${process.env.OPENWEATHERMAP_API_KEY}&units=imperial`)
     const weatherResponse: OpenWeatherMapResponse = await weatherReq.json();
-    throw new Error("a new error get it get it haha get it ");
     if (weatherResponse.cod as number >= 400) {
         throw new Error(`Recieved ${weatherResponse.cod} from external weather api`);
     }
