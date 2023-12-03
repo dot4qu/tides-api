@@ -70,9 +70,9 @@ export default function(): express.Router {
 
         // We don't want to show the user fractional temp degrees/mph, so cast tide as string and round temp and
         // wind_speed and
-        Math.round(weatherResponse.temperature);
-        Math.round(weatherResponse.wind.speed);
-        const windDirStr: string = degreesToDirStr(weatherResponse.wind.deg);
+        weatherResponse.temperature = Math.round(weatherResponse.temperature);
+        weatherResponse.wind.speed  = Math.round(weatherResponse.wind.speed);
+        const windDirStr: string    = degreesToDirStr(weatherResponse.wind.deg);
 
         // We don't want our embedded code to have to deal with floating point in the case of tide height
         const responseObj: SpotCheckApiResponse = {
