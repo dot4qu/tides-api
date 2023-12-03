@@ -218,7 +218,7 @@ export async function renderSwellChart(filename: string,
         name : "Min height",
         type : "bar",
         marker : {
-            color : "rgba(0, 0, 0, 0.0)",
+            color : "rgba(0, 0, 0, 1.0)",
         },
     };
 
