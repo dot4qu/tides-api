@@ -1,4 +1,4 @@
-interface TidesResponse {
+interface SpotCheckApiResponse {
     errorMessage?: string;
     data: any;
 }
@@ -58,6 +58,16 @@ interface OpenWeatherMapResponse {
     name: string;
     cod: number;
     message: string;  // Only sent in the case that 'cod' is an error code
+}
+
+interface Wind {
+    speed: number;
+    deg: number;
+}
+
+interface Weather {
+    temperature: number;
+    wind: Wind;
 }
 
 interface VersionRequest {

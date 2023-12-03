@@ -5,7 +5,7 @@ import * as surfline from "./surfline";
 
 export const MONTHS = [ "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" ];
 export const rendersDir: string        = "temp_renders";
-export const defaultRendersDir: string = "temp_renders";
+export const defaultRendersDir: string = "default_renders";
 export const versionFilePath           = "./fw_versions";
 export const defaultSurflineTideErrorChartFilepath =
     path.join(defaultRendersDir, "default_surfline_tide_error_chart.raw");
@@ -126,27 +126,16 @@ export function degreesToDirStr(deg: number) {
     }
 }
 
-export async function getWeather(latitude: number, longitude: number): Promise<TidesResponse> {
-    let retVal: TidesResponse = {errorMessage : undefined, data : undefined};
-
+export async function getWeather(latitude: number, longitude: number): Promise<Weather> {
     const weatherReq = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${
         longitude}&appid=${process.env.OPENWEATHERMAP_API_KEY}&units=imperial`)
     const weatherResponse: OpenWeatherMapResponse = await weatherReq.json();
+    throw new Error("a new error get it get it haha get it ");
     if (weatherResponse.cod as number >= 400) {
-        console.log(`Recieved ${weatherResponse.cod} from external weather api`);
-        retVal.errorMessage = weatherResponse.message;
-        return retVal;
+        throw new Error(`Recieved ${weatherResponse.cod} from external weather api`);
     }
 
-    const temperature          = Math.round(weatherResponse.main.temp);
-    weatherResponse.wind.speed = Math.round(weatherResponse.wind.speed);
-    const wind                 = weatherResponse.wind;
-    retVal.data                = {
-        temperature,
-        wind,
-    };
-
-    return retVal;
+    return {temperature : weatherResponse.main.temp, wind : weatherResponse.wind};
 }
 
 export function getCurrentTideHeight(tidesResponse: SurflineTidesResponse[]): CurrentTide {
@@ -157,8 +146,8 @@ export function getCurrentTideHeight(tidesResponse: SurflineTidesResponse[]): Cu
     nowDate.set({"minute" : 0, "second" : 0, "millisecond" : 0});
     const now = nowDate.unix();
 
-    let tideHeight: number;
-    let tideRising: boolean;
+    let tideHeight: number  = 0;
+    let tideRising: boolean = false;
     if (tidesResponse.length > 0) {
         try {
             const matchingTimes = tidesResponse.filter(x => x && x.timestamp === now);
