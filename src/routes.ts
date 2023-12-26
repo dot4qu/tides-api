@@ -213,7 +213,7 @@ export default function(): express.Router {
         }
 
         // Current tide height from surfline
-        let rawTides = null;
+        let rawTides: SurflineTidesResponse[]|null = null;
         try {
             rawTides = await surfline.getTidesBySpotId(spotId, 1);
         } catch (err) {
@@ -228,9 +228,9 @@ export default function(): express.Router {
             });
         }
 
-        // Switch timestamps received from server to moment objects. Epoch is timezone/offset-agnostic, so instantiate
-        // as UTC. Use utcOffset func to shift date to user's utc offset to correctly interpret day of year so we know
-        // which raw tide objects to filter before burning into chart.
+        // Switch timestamps received from server to moment objects. Epoch is timezone/offset-agnostic, so
+        // instantiate as UTC. Use utcOffset func to shift date to user's utc offset to correctly interpret day of
+        // year so we know which raw tide objects to filter before burning into chart.
         const tidesWithResponseOffset = rawTides.map(
             x => ({...x, timestamp : moment.utc(((x.timestamp as number) * 1000)).utcOffset(x.utcOffset)}));
         const responseDayOfYear: number = tidesWithResponseOffset[0].timestamp.dayOfYear();
@@ -242,7 +242,7 @@ export default function(): express.Router {
         const xAxisTitle: string =
             tidesSingleDay[0].timestamp.format("dddd MM/DD");  // Friday 12/22, non-localized but eh
 
-        const tideChartFilename = `tide_chart_${deviceId}.jpeg`;
+        const tideChartFilename = `tide_chart_${deviceId}.svg`;
         let   generatedRawFilepath: string;
         try {
             generatedRawFilepath =
@@ -264,7 +264,7 @@ export default function(): express.Router {
                 console.error(`Error in response download for swellchart: ${err}`);
             }
 
-            // Delete human-viewable JPEG by joining original jpeg filename with the known path to the renders dir
+            // Delete human-viewable svg by joining original svg filename with the known path to the renders dir
             fs.unlink(path.join(rendersDir, tideChartFilename), (err) => {
                 if (err) {
                     console.error(`Error erasing image ${tideChartFilename} after sending, non-fatal`)
@@ -372,7 +372,7 @@ export default function(): express.Router {
         const yValuesMax = Object.values(dailySwellMaxMins).map(x => x.max);
         const yValuesMin = Object.values(dailySwellMaxMins).map(x => x.min);
 
-        const swellChartFilename = `swell_chart_${deviceId}.jpeg`;
+        const swellChartFilename = `swell_chart_${deviceId}.svg`;
         let   generatedRawFilepath: string;
         try {
             generatedRawFilepath =
@@ -394,7 +394,7 @@ export default function(): express.Router {
                 console.error(`Error in response download for swellchart: ${err}`);
             }
 
-            // Delete human-viewable JPEG by joining original jpeg filename with the known path to the renders dir
+            // Delete human-viewable svg by joining original svg filename with the known path to the renders dir
             fs.unlink(path.join(rendersDir, swellChartFilename), (err) => {
                 if (err) {
                     console.error(`Error erasing image ${swellChartFilename} after sending, non-fatal`)

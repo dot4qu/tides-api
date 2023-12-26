@@ -3,11 +3,8 @@ import fs from "fs";
 import moment from "moment";
 import path from "path";
 
-import {rendersDir} from "./helpers";
-
-const plotly = require("plotly")("second.string", "ECFumSwhQNCSasct0Owv");
-
-import {buildSwellString, buildTideString, getTideExtremes, SpotCheckRevision} from "./helpers";
+import {buildSwellString, buildTideString, getTideExtremes, rendersDir, SpotCheckRevision} from "./helpers";
+import * as plotlyHelper from "./plotly-helper";
 
 const screenWidthPx: number     = 800;
 const screenHeightPx: number    = 600;
@@ -73,22 +70,48 @@ function toPackedBlackAndWhite(rawBuffer: Buffer): Buffer {
 }
 
 /*
- * Create canvas and burn plotly-gen'd jpeg to it in order to convert it to raw RGB bytes, then pack and B&W the bytes
- * for delivery to device
+ * Create canvas and burn plotly-gen'd image (tested both jpeg and svg) to it in order to convert it to raw RGB bytes,
+ * then pack and B&W the bytes for delivery to device
  */
-async function convertJpegToRawPacked(jpegFilePath: string): Promise<string> {
+async function convertImageToRawPacked(imageFilePath: string): Promise<string> {
     const chartCanvas    = createCanvas(700, 200);
     const chartContext   = chartCanvas.getContext("2d");
-    const tideChartImage = await loadImage(jpegFilePath);
+    const tideChartImage = await loadImage(imageFilePath);
     chartContext.drawImage(tideChartImage, 0, 0);
     const rawBuffer    = chartCanvas.toBuffer('raw');
     const packedBuffer = toPackedBlackAndWhite(rawBuffer);
 
-    const baseChartFilename = path.parse(jpegFilePath).name;
-    const rawChartFilepath  = path.join(path.dirname(jpegFilePath), baseChartFilename + ".raw");
+    const baseChartFilename = path.parse(imageFilePath).name;
+    const rawChartFilepath  = path.join(path.dirname(imageFilePath), baseChartFilename + ".raw");
     await fs.promises.writeFile(rawChartFilepath, Buffer.from(packedBuffer));
 
     return rawChartFilepath;
+}
+
+/*
+ * Bundles data and calls into the created plotly instance to generate an SVG chart
+ */
+async function generateChartFromData(data: Plotly.Data[],
+                                     layout: Partial<Plotly.Layout>,
+                                     imgOptions: Plotly.ToImgopts,
+                                     filename: string) {
+    let svgData = null;
+    try {
+        const plotly = await plotlyHelper.loadPlotly();
+        svgData      = await      plotly.toImage({data, layout}, imgOptions);
+    } catch (e) {
+        console.log(e);
+        debugger;
+    }
+
+    if (!svgData) {
+        throw new Error("No SVG data returned from plotly generation!");
+    }
+
+    // plotly returns it fully encoded and with a "data:img/svg_xml," prefix
+    const rawSvgData     = decodeURIComponent(svgData);
+    const trimmedSvgData = rawSvgData.substring(rawSvgData.indexOf(",") + 1);
+    await fs.promises.writeFile(filename, trimmedSvgData);
 }
 
 export async function renderTideChart(filename: string,
@@ -98,7 +121,7 @@ export async function renderTideChart(filename: string,
                                       xAxisTitle: string,
                                       width: number,
                                       height: number): Promise<string> {
-    let tideTrace = {
+    let tideTrace: Plotly.Data = {
         x : xValues,
         y : yValues,
         mode : "lines",
@@ -106,94 +129,79 @@ export async function renderTideChart(filename: string,
         line : {
             shape : "spline",
             smoothing : 1.3,  // apparently 1.3 is highest value...? Defaults to smoothest if ommitted as well
-            type : "solid",
+            // type : "solid",
             width : 4,        // default is 2
             color : "black",  // default is blue
         },
         type : "scatter",
     };
 
-    const figure = {
-        data : [ tideTrace ],
-        layout : {
+    const data: Plotly.Data[]            = [ tideTrace ];
+    const layout: Partial<Plotly.Layout> = {
+        title : {
+            text : "<b>Tide Chart</b>",
+            font : {size : 20, color : "black"},
+        },
+        xaxis : {
+            autotick : false,
+            tick0 : tick0,
+            tickprefix : "<b>",
+            ticksuffix : "</b>",
+            dtick : 4.0,
+            showgrid : true,
+            showline : true,
+            zeroline : false,
+            color : "black",
+            tickfont : {
+                size : 18,
+                color : "black",
+            },
             title : {
-                text : "<b>Tide Chart</b>",
-                font : {size : 20, color : "black"},
-            },
-            xaxis : {
-                autotick : false,
-                tick0 : tick0,
-                tickprefix : "<b>",
-                ticksuffix : "</b>",
-                dtick : 4.0,
-                showgrid : true,
-                showline : true,
-                zeroline : false,
-                color : "black",
-                tickfont : {
+                text : `<b>${xAxisTitle}</b>`,
+                font : {
                     size : 18,
                     color : "black",
                 },
-                title : {
-                    text : `<b>${xAxisTitle}</b>`,
-                    font : {
-                        size : 18,
-                        color : "black",
-                    },
-                },
             },
-            yaxis : {
-                showgrid : false,
+        },
+        yaxis : {
+            showgrid : false,
+            color : "black",
+            showline : true,
+            zeroline : true,
+            tickprefix : "<b>",
+            ticksuffix : "</b>",
+            tickfont : {
+                size : 18,
                 color : "black",
-                showline : true,
-                zeroline : true,
-                tickprefix : "<b>",
-                ticksuffix : "</b>",
-                tickfont : {
+            },
+            title : {
+                text : "<b>Height (m)</b>",
+                font : {
                     size : 18,
                     color : "black",
                 },
-                title : {
-                    text : "<b>Height (m)</b>",
-                    font : {
-                        size : 18,
-                        color : "black",
-                    },
-                },
             },
-            // Removes all of the padding while keeping the axis labels if around their default distance
-            margin : {
-                l : 55,
-                t : 40,
-                r : 30,
-                b : 50,
-            },
+        },
+        // Removes all of the padding while keeping the axis labels if around their default distance
+        margin : {
+            l : 55,
+            t : 40,
+            r : 30,
+            b : 50,
         },
     };
 
-    const imgOptions = {
-        format : "jpeg",
+    const imgOptions: Plotly.ToImgopts = {
+        format : "svg",
         width,
         height,
     };
 
-    const plotlyPromise = new Promise<string>((resolve, reject) => {
-        plotly.getImage(figure, imgOptions, (err: Error, imageStream: NodeJS.ReadableStream) => {
-            if (err) {
-                console.error(`Error in plotly.getImage: ${err}`);
-                return reject(err);
-            }
+    const filepath = `${__dirname}/../${rendersDir}/${filename}`;
+    await generateChartFromData(data, layout, imgOptions, filepath);
 
-            // Kick off stream of image piped to file but don't resolve promise until full stream written
-            const filepath        = `${__dirname}/../${rendersDir}/${filename}`;
-            const chartFileStream = fs.createWriteStream(filepath);
-            const pipeStream      = imageStream.pipe(chartFileStream);
-            pipeStream.on("finish", () => resolve(filepath));
-        });
-    });
-
-    const chartFilepath = await plotlyPromise;
-    return await                convertJpegToRawPacked(chartFilepath);
+    return await convertImageToRawPacked(filepath);
 }
 
 export async function renderSwellChart(filename: string,
@@ -202,7 +210,7 @@ export async function renderSwellChart(filename: string,
                                        yValuesMin: number[],
                                        width: number,
                                        height: number): Promise<string> {
-    let swellMaxTrace = {
+    let swellMaxTrace: Plotly.Data = {
         x : xValues,
         y : yValuesMax,
         name : "Max height",
@@ -212,7 +220,7 @@ export async function renderSwellChart(filename: string,
         },
     };
 
-    let swellMinTrace = {
+    let swellMinTrace: Plotly.Data = {
         x : xValues,
         y : yValuesMin,
         name : "Min height",
@@ -222,83 +230,69 @@ export async function renderSwellChart(filename: string,
         },
     };
 
-    const figure = {
-        data : [
-            swellMaxTrace,
-            swellMinTrace,
-        ],
-        layout : {
-            showlegend : false,
-            barmode : "overlay",
+    const data: Plotly.Data[] = [
+        swellMaxTrace,
+        swellMinTrace,
+    ];
+
+    const layout: Partial<Plotly.Layout> = {
+        showlegend : false,
+        barmode : "overlay",
+        title : {
+            text : "<b>Swell Chart</b>",
+            font : {
+                size : 20,
+                color : "black",
+            },
+        },
+        xaxis : {
+            ticks : "",
+            tickprefix : "<b>",
+            ticksuffix : "</b>",
+            showgrid : false,
+            showline : true,
+            color : "black",
+            tickfont : {
+                size : 18,
+                color : "black",
+            },
+        },
+        yaxis : {
+            showgrid : false,
+            zeroline : false,
+            showline : true,
+            color : "black",
+            tickprefix : "<b>",
+            ticksuffix : "</b>",
+            tickfont : {
+                size : 18,
+                color : "black",
+            },
             title : {
-                text : "<b>Swell Chart</b>",
+                text : "<b>Height (m)</b>",
                 font : {
-                    size : 20,
-                    color : "black",
-                },
-            },
-            xaxis : {
-                ticks : "none",
-                tickprefix : "<b>",
-                ticksuffix : "</b>",
-                showgrid : false,
-                showline : true,
-                color : "black",
-                tickfont : {
                     size : 18,
                     color : "black",
                 },
             },
-            yaxis : {
-                showgrid : false,
-                zeroline : false,
-                showline : true,
-                color : "black",
-                tickprefix : "<b>",
-                ticksuffix : "</b>",
-                tickfont : {
-                    size : 18,
-                    color : "black",
-                },
-                title : {
-                    text : "<b>Height (m)</b>",
-                    font : {
-                        size : 18,
-                        color : "black",
-                    },
-                },
-            },
-            // Removes all of the padding while keeping the axis labels if around their default distance
-            margin : {
-                l : 55,
-                t : 40,
-                r : 30,
-                b : 30,
-            },
-        }
+        },
+        // Removes all of the padding while keeping the axis labels if around their default distance
+        margin : {
+            l : 55,
+            t : 40,
+            r : 30,
+            b : 30,
+        },
     };
 
-    const imgOptions = {
-        format : "jpeg",
+    const imgOptions: Plotly.ToImgopts = {
+        format : "svg",
         width,
         height,
     };
 
-    const plotlyPromise = new Promise<string>((resolve, reject) => {
-        plotly.getImage(figure, imgOptions, (err: Error, imageStream: NodeJS.ReadableStream) => {
-            if (err) {
-                console.error(`Error in plotly.getImage: ${err}`);
-                return reject(err);
-            }
+    const filepath = `${__dirname}/../${rendersDir}/${filename}`;
+    await generateChartFromData(data, layout, imgOptions, filepath);
 
-            // Kick off stream of image piped to file but don't resolve promise until full stream written
-            const filepath        = `${__dirname}/../${rendersDir}/${filename}`;
-            const chartFileStream = fs.createWriteStream(filepath);
-            const pipeStream      = imageStream.pipe(chartFileStream);
-            pipeStream.on("finish", () => resolve(filepath));
-        });
-    });
-
-    const chartFilepath = await plotlyPromise;
-    return await                convertJpegToRawPacked(chartFilepath);
+    return await convertImageToRawPacked(filepath);
 }

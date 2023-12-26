@@ -29,12 +29,17 @@
     "express-async-errors": "^3.1.1",
     "fs": "0.0.1-security",
     "http": "0.0.1-security",
+    "jsdom": "^23.0.1",
     "moment": "^2.29.4",
     "node-fetch": "^2.6.0",
     "nodemon": "^2.0.4",
     "npm-run-script": "0.0.4",
-    "plotly": "^1.0.6",
+    "plotly.js": "^2.27.1",
     "run-scripts": "^0.4.0",
     "typescript": "^5.1.6"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^21.1.6",
+    "@types/plotly.js": "^2.12.32"
   }
 }
