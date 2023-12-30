@@ -11,6 +11,7 @@ import moment from "moment";
 
 import {authenticate} from "./auth-handler";
 import {twoDigits} from "./helpers";
+import otaRouter from "./ota-routes";
 import router from "./routes";
 
 const app  = express();
@@ -34,6 +35,7 @@ app.use((req: express.Request, res: express.Response, next: express.NextFunction
 // Auth must come before router to force all routes to auth before their standard endpoint handlers
 app.use((req, res, next) => authenticate(req, res, next));
 app.use(router());
+app.use(otaRouter());
 
 /*
  * Global error handler since we want custom handling for non-caught exceptions (default Express handler will 500
