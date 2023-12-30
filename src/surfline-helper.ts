@@ -1,6 +1,8 @@
 import moment from "moment";
 import fetch from "node-fetch";
 
+import {MONTHS, SpotCheckRevision} from "./helpers";
+
 enum SurflineForecastType {
     WAVE     = "wave",
     TIDES    = "tides",

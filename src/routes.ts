@@ -6,8 +6,6 @@ import fetch from "node-fetch";
 import path from "path";
 
 import {
-    buildSwellString,
-    buildTideString,
     defaultOWMWindErrorChartFilepath,
     defaultPlotlyErrorSwellChartFilepath,
     defaultPlotlyErrorTideChartFilepath,
@@ -16,16 +14,16 @@ import {
     defaultSurflineTideErrorChartFilepath,
     degreesToDirStr,
     getCurrentTideHeight,
-    getCurrentWeather,
     getTideExtremes,
-    getWeatherForecast,
     MONTHS,
     rendersDir,
     roundToMaxSingleDecimal,
     SpotCheckRevision,
 } from "./helpers";
-import * as render   from "./render";
-import * as surfline from "./surfline";
+import * as owmHelper        from "./open-weather-map-helper";
+import * as render           from "./render";
+import * as surflineHelper   from "./surfline-helper";
+import * as worldTidesHelper from "./world-tides-helper";
 
 export default function(): express.Router {
     const router = Router();
@@ -44,32 +42,29 @@ export default function(): express.Router {
             return res.status(400).send();
         }
 
-        let currentTideObj: CurrentTide;
+        let currentTideObj: CurrentTide = {height : 0, rising : false};
         try {
-            const tidesRes = await surfline.getTidesBySpotId(spotId, 1);
+            // TODO :: get correct date depending on user's utc offset, or maybe just the spot's utc offset
+            const tidesRes = await worldTidesHelper.getTides(latitude, longitude);
             currentTideObj = getCurrentTideHeight(tidesRes);
         } catch (err) {
-            // Surfline request failed for some reason (straight request, no parsing done), return placeholder image
+            // World Tides request failed for some reason (straight request, no parsing done), return placeholder image
             const errCast = err as Error;
-            console.error(`Request to surfline failed, sending tides object with fake data - ${errCast.name}: ${
-                errCast.message}`);
-
-            currentTideObj = {height : 0, rising : false};
+            console.error(`Request to World Tides API failed, sending conditions object with fake data - ${
+                errCast.name}: ${errCast.message}`);
         }
 
-        let weatherResponse: Weather;
+        let weatherResponse: Weather = {temperature : 0, wind : {speed : 0, deg : 0}};
         try {
-            weatherResponse = await getCurrentWeather(latitude, longitude);
+            weatherResponse = await owmHelper.getCurrentWeather(latitude, longitude);
         } catch (err) {
             const errCast = err as Error;
-            console.error(
-                `Request to weather failed, sending tides object with fake data - ${errCast.name}: ${errCast.message}`);
-
-            weatherResponse = {temperature : 0, wind : {speed : 0, deg : 0}};
+            console.error(`Request to OWM failed, sending conditions object with fake data - ${errCast.name}: ${
+                errCast.message}`);
         }
 
         // We don't want to show the user fractional temp degrees/mph, so cast tide as string and round temp and
-        // wind_speed and
+        // wind_speed
         weatherResponse.temperature = Math.round(weatherResponse.temperature);
         weatherResponse.wind.speed  = Math.round(weatherResponse.wind.speed);
         const windDirStr: string    = degreesToDirStr(weatherResponse.wind.deg);
@@ -126,7 +121,7 @@ export default function(): express.Router {
         // Current tide height from surfline
         let rawTides: SurflineTidesResponse[]|null = null;
         try {
-            rawTides = await surfline.getTidesBySpotId(spotId, 1);
+            rawTides = await surflineHelper.getTidesBySpotId(spotId, 1);
         } catch (err) {
             const errCast = err as Error;
             // Surfline request failed for some reason (straight request, no parsing done), return placeholder image
@@ -231,7 +226,7 @@ export default function(): express.Router {
         // without an premium `accessToken` query param is 5
         let rawSwell: SurflineWaveResponse[] = [];
         try {
-            rawSwell = await surfline.getWavesBySpotId(spotId, 5, 1);
+            rawSwell = await surflineHelper.getWavesBySpotId(spotId, 5, 1);
         } catch (err) {
             const errCast = err as Error;
             // Surfline request failed for some reason (straight request, no parsing done), return placeholder image
@@ -359,7 +354,7 @@ export default function(): express.Router {
 
         let rawForecast: OpenWeatherMapOneCallResponse;
         try {
-            rawForecast = await getWeatherForecast(latitude, longitude);
+            rawForecast = await owmHelper.getWeatherForecast(latitude, longitude);
         } catch (err) {
             const errCast = err as Error;
             // OpenWeatherMap request failed for some reason (straight request, no parsing done), return placeholder
@@ -374,15 +369,15 @@ export default function(): express.Router {
             });
         }
 
-        // Strip out the first element of the hourly array since it will be for the current hour which we already have
-        // the most up-to-date data in the 'current' object of the response
+        // Strip out the first element of the hourly array since it will be for the current hour which we already
+        // have the most up-to-date data in the 'current' object of the response
         const forecastWithoutNow                      = rawForecast.hourly.slice(1);
         const rawWind: OpenWeatherMapForecastObject[] = [ rawForecast.current ].concat(forecastWithoutNow);
 
         // Switch timestamps received from server to moment objects. Epoch is timezone/offset-agnostic, so
         // instantiate as UTC. Use utcOffset func to shift date to user's utc offset (returned in overall forecast
-        // response) to correctly interpret day of year so we know which raw wind objects to filter before burning into
-        // chart. Response offset is in seconds, multiply up to hours for moment function
+        // response) to correctly interpret day of year so we know which raw wind objects to filter before burning
+        // into chart. Response offset is in seconds, multiply up to hours for moment function
         const windWithResponseOffset = rawWind.map(
             x => ({
                 ...x,

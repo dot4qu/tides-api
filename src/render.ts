@@ -3,7 +3,7 @@ import fs from "fs";
 import moment from "moment";
 import path from "path";
 
-import {buildSwellString, buildTideString, getTideExtremes, rendersDir, SpotCheckRevision} from "./helpers";
+import {rendersDir} from "./helpers";
 import * as plotlyHelper from "./plotly-helper";
 
 const screenWidthPx: number     = 800;
