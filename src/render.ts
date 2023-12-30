@@ -296,3 +296,75 @@ export async function renderSwellChart(filename: string,
 
     return await convertImageToRawPacked(filepath);
 }
+
+export async function renderWindChart(filename: string,
+                                      xValues: number[],
+                                      yValues: number[],
+                                      // tick0: number,
+                                      // xAxisTitle: string,
+                                      width: number,
+                                      height: number): Promise<string> {
+    let windTrace: Plotly.Data = {
+        x : xValues,
+        y : yValues,
+        name : "Windspeed",
+        type : "bar",
+        marker : {
+            color : "rgba(0, 0, 0, 1.0)",
+        },
+    };
+
+    const data: Plotly.Data[]            = [ windTrace ];
+    const layout: Partial<Plotly.Layout> = {
+        bargap : 0.1,
+        title : {
+            text : "<b>Wind Chart</b>",
+            font : {size : 20, color : "black"},
+        },
+        xaxis : {
+            tickprefix : "<b>",
+            ticksuffix : "</b>",
+            dtick : 4.0,
+            color : "black",
+            tickfont : {
+                size : 18,
+                color : "black",
+            },
+            type : "category",  // Necessary to prevent plotly from reording x axis order to start with lowest int
+            title : {
+                text : `<b>Windspeed (mph)</b>`,
+                font : {
+                    size : 18,
+                    color : "black",
+                },
+            },
+        },
+        yaxis : {
+            color : "black",
+            tickprefix : "<b>",
+            ticksuffix : "</b>",
+            tickfont : {
+                size : 18,
+                color : "black",
+            },
+        },
+        // Removes all of the padding while keeping the axis labels if around their default distance
+        margin : {
+            l : 55,
+            t : 40,
+            r : 30,
+            b : 50,
+        },
+    };
+
+    const imgOptions: Plotly.ToImgopts = {
+        format : "svg",
+        width,
+        height,
+    };
+
+    const filepath = `${__dirname}/../${rendersDir}/${filename}`;
+    await generateChartFromData(data, layout, imgOptions, filepath);
+
+    return await convertImageToRawPacked(filepath);
+}

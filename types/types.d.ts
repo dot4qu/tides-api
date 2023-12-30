@@ -35,29 +35,36 @@ interface SurflineBaseApiResponse {
 }
 
 interface OpenWeatherMapWeatherObject {
-    temp: number;
-    feels_like: number;
-    temp_min: number;
-    temp_max: number;
-    pressure: number;
-    humidity: number;
+    id: number;
+    main: string;
+    description: string;
+    icon: string;
 }
 
-interface OpenWeatherMapResponse {
-    coord: any;
-    weather: any;
-    base: string;
-    main: OpenWeatherMapWeatherObject;
-    visibility: number;
-    wind: any;
-    clouds: any;
-    dt: string;
-    sys: any;
-    timezone: number;
-    id: number;
-    name: string;
-    cod: number;
-    message: string;  // Only sent in the case that 'cod' is an error code
+interface OpenWeatherMapForecastObject {
+    dt: number;       // epoch
+    sunrise: number;  // epoch
+    sunset: number;   // epoch
+    temp: number;
+    feels_like: number;
+    pressure: number;
+    humidity: number;
+    dew_point: number;
+    uvi: number;
+    clouds: number;
+    visibility: number;  // meters?
+    wind_speed: number;
+    wind_deg: number;
+    weather: OpenWeatherMapWeatherObject[];
+}
+
+interface OpenWeatherMapOneCallResponse {
+    lat: number;
+    lon: number;
+    timezone: string;
+    timezone_offset: number;  // seconds
+    current: OpenWeatherMapForecastObject;
+    hourly: OpenWeatherMapForecastObject[];
 }
 
 interface Wind {

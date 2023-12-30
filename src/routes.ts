@@ -8,14 +8,17 @@ import path from "path";
 import {
     buildSwellString,
     buildTideString,
+    defaultOWMWindErrorChartFilepath,
     defaultPlotlyErrorSwellChartFilepath,
     defaultPlotlyErrorTideChartFilepath,
+    defaultPlotlyErrorWindChartFilepath,
     defaultSurflineSwellErrorChartFilepath,
     defaultSurflineTideErrorChartFilepath,
     degreesToDirStr,
     getCurrentTideHeight,
+    getCurrentWeather,
     getTideExtremes,
-    getWeather,
+    getWeatherForecast,
     MONTHS,
     rendersDir,
     roundToMaxSingleDecimal,
@@ -59,7 +62,7 @@ export default function(): express.Router {
 
         let weatherResponse: Weather;
         try {
-            weatherResponse = await getWeather(latitude, longitude);
+            weatherResponse = await getCurrentWeather(latitude, longitude);
         } catch (err) {
             const errCast = err as Error;
             console.error(
@@ -408,6 +411,122 @@ export default function(): express.Router {
                     console.error(`Error erasing image ${swellChartFilename} after sending, non-fatal`)
                 }
             });
+        });
+    });
+
+    /*
+     * Render a 2 pixels-per-byte, black and white raw array of data and return it to caller
+     * Test curl (lat/lon only things used for wind forecast, spot_id doesn't matter):
+     */
+    // clang-format off
+    // curl -k -X GET "https://localhost:9443/wind_chart?lat=33.5930302087&lon=-117.8819918632&spot_id=SPOT_ID&width=WW&h=HH&device_id=ff-ff-ff-ff-ff-ff" > /dev/null
+    // clang-format on
+    router.get("/wind_chart", async (req: express.Request, res: express.Response) => {
+        let deviceId: string = req.query.device_id as unknown as string;
+        if (!deviceId) {
+            console.log(`Received tides_chart req with no device id, denying`);
+            res.status(422).send("Missing device_id")
+            return;
+        }
+
+        let latitude: number  = req.query.lat as unknown as number;
+        let longitude: number = req.query.lon as unknown as number;
+        let spotId: string    = req.query.spot_id as unknown as string;
+        let width: number     = req.query.width as unknown as number;
+        let height: number    = req.query.height as unknown as number;
+        if (!latitude || !longitude || !spotId) {
+            console.log(`Received swell_chart req with missing lat, lon, or spot id (${req.query.lat} - ${
+                req.query.lon} - ${spotId})`);
+            res.status(422).send("Missing request data");
+            return;
+        }
+
+        if (!width) {
+            width = 700;
+        }
+
+        if (!height) {
+            height = 200;
+        }
+
+        let rawForecast: OpenWeatherMapOneCallResponse;
+        try {
+            rawForecast = await getWeatherForecast(latitude, longitude);
+        } catch (err) {
+            const errCast = err as Error;
+            // OpenWeatherMap request failed for some reason (straight request, no parsing done), return placeholder
+            // image
+            console.error(`Request to openweathermap failed, returning succes code w/ error text placeholder chart - ${
+                errCast.name}: ${errCast.message}`);
+            return res.download(defaultOWMWindErrorChartFilepath, "open_weather_map_wind_err.raw", (downloadErr) => {
+                if (downloadErr) {
+                    console.error(
+                        `Error in response download for default open weather map wind err chart: ${downloadErr}`);
+                }
+            });
+        }
+
+        // Strip out the first element of the hourly array since it will be for the current hour which we already have
+        // the most up-to-date data in the 'current' object of the response
+        const forecastWithoutNow                      = rawForecast.hourly.slice(1);
+        const rawWind: OpenWeatherMapForecastObject[] = [ rawForecast.current ].concat(forecastWithoutNow);
+
+        // Switch timestamps received from server to moment objects. Epoch is timezone/offset-agnostic, so
+        // instantiate as UTC. Use utcOffset func to shift date to user's utc offset (returned in overall forecast
+        // response) to correctly interpret day of year so we know which raw wind objects to filter before burning into
+        // chart. Response offset is in seconds, multiply up to hours for moment function
+        const windWithResponseOffset = rawWind.map(
+            x => ({
+                ...x,
+                timestamp : moment.utc(((x.dt as number) * 1000)).utcOffset(rawForecast.timezone_offset * 60 * 60),
+            }));
+
+        // TODO :: filter these to just 24 hours (I think the api does that but we should do it anyway)
+        // Convert to local first using the utc offset returned from OWM for the requested longitude
+        const nowLocal          = windWithResponseOffset[0].timestamp.local();
+        const tomorrowLocal     = nowLocal.add(24, "hours");
+        const xValues: number[] = windWithResponseOffset.map(x => x.timestamp.local())
+                                      .filter(x => x < tomorrowLocal)
+                                      .map(x => x.hour() + x.minute() / 60);
+        const yValues = windWithResponseOffset.map(x => x.wind_speed);
+
+        const windChartFilename = `wind_chart_${deviceId}.svg`;
+        let   generatedRawFilepath: string;
+        try {
+            generatedRawFilepath = await render.renderWindChart(windChartFilename, xValues, yValues, width, height);
+        } catch (err) {
+            const errCast = err as Error;
+            // Plotly render func failed for some reason, return placeholder image
+            console.error(`Request to plotly failed, returning succes code w/ error text placeholder chart - ${
+                errCast.name}: ${errCast.message}`);
+            return res.download(defaultPlotlyErrorWindChartFilepath, "chart_render_wind_err.raw", (downloadErr) => {
+                if (downloadErr) {
+                    console.error(`Error in response download for default plotly wind err chart: ${downloadErr}`);
+                }
+            });
+        }
+
+        return res.download(generatedRawFilepath, windChartFilename, (err) => {
+            if (err) {
+                console.error(`Error in response download for wind chart: ${err}`);
+            }
+
+            /*
+            // Delete human-viewable svg by joining original svg filename with the known path to the renders dir
+            fs.unlink(path.join(rendersDir, windChartFilename), (err) => {
+                if (err) {
+                    console.error(`Error erasing image ${windChartFilename} after sending, non-fatal`)
+                }
+            });
+
+            // Delete the RAW image that was returned to the client with the full filpath + filename returned by the
+            // render function
+            fs.unlink(generatedRawFilepath, (err) => {
+                if (err) {
+                    console.error(`Error erasing image ${windChartFilename} after sending, non-fatal`)
+                }
+            });
+            */
         });
     });
 
