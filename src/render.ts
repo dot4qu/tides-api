@@ -1,6 +1,6 @@
 import {createCanvas, loadImage} from "canvas";
 import fs from "fs";
-import moment from "moment";
+import moment from "moment-timezone";
 import path from "path";
 
 import {rendersDir} from "./helpers";
@@ -117,7 +117,6 @@ async function generateChartFromData(data: Plotly.Data[],
 export async function renderTideChart(filename: string,
                                       xValues: number[],
                                       yValues: number[],
-                                      tick0: number,
                                       xAxisTitle: string,
                                       width: number,
                                       height: number): Promise<string> {
@@ -129,7 +128,6 @@ export async function renderTideChart(filename: string,
         line : {
             shape : "spline",
             smoothing : 1.3,  // apparently 1.3 is highest value...? Defaults to smoothest if ommitted as well
-            // type : "solid",
             width : 4,        // default is 2
             color : "black",  // default is blue
         },
@@ -143,14 +141,12 @@ export async function renderTideChart(filename: string,
             font : {size : 20, color : "black"},
         },
         xaxis : {
-            autotick : false,
-            tick0 : tick0,
             tickprefix : "<b>",
             ticksuffix : "</b>",
             dtick : 4.0,
             showgrid : true,
             showline : true,
-            zeroline : false,
+            zeroline : true,
             color : "black",
             tickfont : {
                 size : 18,

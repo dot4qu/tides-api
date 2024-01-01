@@ -1,7 +1,7 @@
 import express from "express";
 import {Router} from "express";
 import fs from 'fs';
-import moment from "moment";
+import moment from "moment-timezone";
 import fetch from "node-fetch";
 import path from "path";
 
@@ -11,7 +11,7 @@ import {
     defaultPlotlyErrorTideChartFilepath,
     defaultPlotlyErrorWindChartFilepath,
     defaultSurflineSwellErrorChartFilepath,
-    defaultSurflineTideErrorChartFilepath,
+    defaultWorldTidesTideErrorChartFilepath,
     degreesToDirStr,
     getCurrentTideHeight,
     getTideExtremes,
@@ -46,7 +46,7 @@ export default function(): express.Router {
         try {
             // TODO :: get correct date depending on user's utc offset, or maybe just the spot's utc offset
             const tidesRes = await worldTidesHelper.getTides(latitude, longitude);
-            currentTideObj = getCurrentTideHeight(tidesRes);
+            currentTideObj = getCurrentTideHeight(tidesRes.heights);
         } catch (err) {
             // World Tides request failed for some reason (straight request, no parsing done), return placeholder image
             const errCast = err as Error;
@@ -119,40 +119,45 @@ export default function(): express.Router {
         }
 
         // Current tide height from surfline
-        let rawTides: SurflineTidesResponse[]|null = null;
+        let tidesRes: WorldTidesResponse;
         try {
-            rawTides = await surflineHelper.getTidesBySpotId(spotId, 1);
+            tidesRes = await worldTidesHelper.getTides(latitude, longitude);
         } catch (err) {
             const errCast = err as Error;
-            // Surfline request failed for some reason (straight request, no parsing done), return placeholder image
-            console.error(`Request to surfline failed, returning succes code w/ error text placeholder chart - ${
+            // World Tides API request failed for some reason (straight request, no parsing done), return placeholder
+            // image
+            console.error(`Request to world tides API failed, returning succes code w/ error text placeholder chart - ${
                 errCast.name}: ${errCast.message}`);
-            return res.download(defaultSurflineTideErrorChartFilepath, "surfline_tide_err.raw", (downloadErr) => {
+            return res.download(defaultWorldTidesTideErrorChartFilepath, "world_tides_tide_err.raw", (downloadErr) => {
                 if (downloadErr) {
-                    console.error(`Error in response download for default surfline tide err chart: ${downloadErr}`);
+                    console.error(`Error in response download for default world tides tide err chart: ${downloadErr}`);
                 }
             });
         }
 
-        // Switch timestamps received from server to moment objects. Epoch is timezone/offset-agnostic, so
-        // instantiate as UTC. Use utcOffset func to shift date to user's utc offset to correctly interpret day of
-        // year so we know which raw tide objects to filter before burning into chart.
-        const tidesWithResponseOffset = rawTides.map(
-            x => ({...x, timestamp : moment.utc(((x.timestamp as number) * 1000)).utcOffset(x.utcOffset)}));
-        const responseDayOfYear: number = tidesWithResponseOffset[0].timestamp.dayOfYear();
-        const tidesSingleDay = tidesWithResponseOffset.filter(x => x.timestamp.dayOfYear() == responseDayOfYear);
+        // Switch timestamps received from server to moment objects. Use the nice ISO date string for each height
+        // instead of the epoch time field. When using the 'date=today' query param, the API returns 1 day worth of
+        // tides starting at midnight local time but the actual time values are UTC.
+        const tidesWithResponseOffset =
+            tidesRes.heights.map(x => ({...x, timestamp : moment.utc(x.date).tz(tidesRes.timezone)}));
 
-        const xValues: number[] = tidesSingleDay.map(x => x.timestamp.hour() + x.timestamp.minute() / 60);
-        const yValues: number[] = tidesSingleDay.map(x => x.height);
-        const tick0: number     = tidesSingleDay[0].timestamp.hour();
+        const xValues: number[] = tidesWithResponseOffset.map(x => x.timestamp.hour() + x.timestamp.minute() / 60);
+
+        // Hack the final value (which is midnight starting the next day) to 24, since it normally would be zero and
+        // overlapping with the already-existing 0 at the 0th index for midnight of this day
+        if (xValues.length == 25 && xValues[24] == 0) {
+            xValues[24] = 24;
+        }
+
+        const yValues: number[] = tidesWithResponseOffset.map(x => x.height);
         const xAxisTitle: string =
-            tidesSingleDay[0].timestamp.format("dddd MM/DD");  // Friday 12/22, non-localized but eh
+            tidesWithResponseOffset[0].timestamp.format("dddd MM/DD");  // Friday 12/22, non-localized but eh
 
         const tideChartFilename = `tide_chart_${deviceId}.svg`;
         let   generatedRawFilepath: string;
         try {
             generatedRawFilepath =
-                await render.renderTideChart(tideChartFilename, xValues, yValues, tick0, xAxisTitle, width, height);
+                await render.renderTideChart(tideChartFilename, xValues, yValues, xAxisTitle, width, height);
         } catch (err) {
             const errCast = err as Error;
             // Plotly render func failed for some reason, return placeholder image
@@ -173,7 +178,7 @@ export default function(): express.Router {
             // Delete human-viewable svg by joining original svg filename with the known path to the renders dir
             fs.unlink(path.join(rendersDir, tideChartFilename), (err) => {
                 if (err) {
-                    console.error(`Error erasing image ${tideChartFilename} after sending, non-fatal`)
+                    console.error(`Error erasing image ${tideChartFilename} after sending, non-fatal`);
                 }
             });
 
@@ -181,7 +186,7 @@ export default function(): express.Router {
             // render function
             fs.unlink(generatedRawFilepath, (err) => {
                 if (err) {
-                    console.error(`Error erasing image ${tideChartFilename} after sending, non-fatal`)
+                    console.error(`Error erasing image ${tideChartFilename} after sending, non-fatal`);
                 }
             });
         });

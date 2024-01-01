@@ -17,5 +17,6 @@ interface WorldTidesResponse {
     station: string;
     requestDatum: string;
     responseDatum: string;
+    timezone: string;
     heights: WorldTidesHeight[];
 }

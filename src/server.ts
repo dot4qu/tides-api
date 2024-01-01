@@ -7,7 +7,7 @@ import express from "express";
 import fs from "fs";
 import http from "http";
 import https from "https";
-import moment from "moment";
+import moment from "moment-timezone";
 
 import {authenticate} from "./auth-handler";
 import {twoDigits} from "./helpers";

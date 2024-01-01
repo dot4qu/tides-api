@@ -1,12 +1,12 @@
-import moment from "moment";
+import moment from "moment-timezone";
 import path from "path";
 
 export const MONTHS = [ "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" ];
 export const rendersDir: string        = "temp_renders";
 export const defaultRendersDir: string = "default_renders";
 export const versionFilePath           = "./fw_versions";
-export const defaultSurflineTideErrorChartFilepath =
-    path.join(defaultRendersDir, "default_surfline_tide_error_chart.raw");
+export const defaultWorldTidesTideErrorChartFilepath =
+    path.join(defaultRendersDir, "default_worldtides_tide_error_chart.raw");
 export const defaultSurflineSwellErrorChartFilepath =
     path.join(defaultRendersDir, "default_surfline_swell_error_chart.raw");
 export const defaultOWMWindErrorChartFilepath    = path.join(defaultRendersDir, "default_owm_wind_error_chart.raw");

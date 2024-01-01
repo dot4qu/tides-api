@@ -30,7 +30,7 @@
     "fs": "0.0.1-security",
     "http": "0.0.1-security",
     "jsdom": "^23.0.1",
-    "moment": "^2.29.4",
+    "moment-timezone": "^0.5.44",
     "node-fetch": "^2.6.0",
     "nodemon": "^2.0.4",
     "npm-run-script": "0.0.4",
