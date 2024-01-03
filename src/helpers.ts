@@ -4,7 +4,7 @@ import path from "path";
 export const MONTHS = [ "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" ];
 export const rendersDir: string        = "temp_renders";
 export const defaultRendersDir: string = "default_renders";
-export const versionFilePath           = "./fw_versions";
+export const versionFilepath           = "./fw_versions";
 export const defaultWorldTidesTideErrorChartFilepath =
     path.join(defaultRendersDir, "default_worldtides_tide_error_chart.raw");
 export const defaultSurflineSwellErrorChartFilepath =

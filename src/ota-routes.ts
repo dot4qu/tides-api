@@ -2,7 +2,7 @@ import express from "express";
 import {Router} from "express";
 import fs from 'fs';
 
-import {versionFilePath} from "./helpers";
+import {versionFilepath} from "./helpers";
 
 const fsPromises = fs.promises;
 
@@ -22,7 +22,7 @@ export default function(): express.Router {
         const reqBody: VersionRequest                       = req.body as VersionRequest;
         let                                      versionStr = "";
         try {
-            const versionFile = await fsPromises.readFile(`${versionFilePath}/current_version.txt`);
+            const versionFile = await fsPromises.readFile(`${versionFilepath}/current_version.txt`);
             versionStr        = versionFile.toString().trim();
         } catch (e) {
             console.error(
@@ -41,6 +41,10 @@ export default function(): express.Router {
         return res.json(retVal);
     });
 
+    // Test cURL
+    // clang-format off
+    // curl -k -X GET "https://localhost:9443/ota/get_binary?device_id=ff-ff-ff-ff-ff-ff"
+    // clang-format on
     router.get("/ota/get_binary", async (req: express.Request, res: express.Response) => {
         let binaryPath = undefined;
         if (req.query.version) {
@@ -48,7 +52,7 @@ export default function(): express.Router {
             // TODO :: regex validate this (or check from known available versions)
 
             const requestedVersionNumberStrs: string[] = queryStr.split(".");
-            const requestedBinaryPath = `${versionFilePath}/spot-check-firmware-${requestedVersionNumberStrs[0]}-${
+            const requestedBinaryPath = `${versionFilepath}/spot-check-firmware-${requestedVersionNumberStrs[0]}-${
                 requestedVersionNumberStrs[1]}-${requestedVersionNumberStrs[2]}.bin`;
 
             try {
@@ -65,7 +69,7 @@ export default function(): express.Router {
             const reqBody: VersionRequest                       = req.body as VersionRequest;
             let                                      versionStr = "";
             try {
-                const versionFile = await fsPromises.readFile(`${versionFilePath}/current_version.txt`);
+                const versionFile = await fsPromises.readFile(`${versionFilepath}/current_version.txt`);
                 versionStr        = versionFile.toString().trim();
             } catch (e) {
                 console.error(
@@ -77,7 +81,7 @@ export default function(): express.Router {
             }
 
             const currentVersionNumberStrs: string[] = versionStr.split(".");
-            const currentBinaryPath = `${versionFilePath}/spot-check-firmware-${currentVersionNumberStrs[0]}-${
+            const currentBinaryPath = `${versionFilepath}/spot-check-firmware-${currentVersionNumberStrs[0]}-${
                 currentVersionNumberStrs[1]}-${currentVersionNumberStrs[2]}.bin`;
 
             try {

@@ -10,7 +10,7 @@ import https from "https";
 import moment from "moment-timezone";
 
 import {authenticate} from "./auth-handler";
-import {twoDigits} from "./helpers";
+import {twoDigits, versionFilepath} from "./helpers";
 import otaRouter from "./ota-routes";
 import router from "./routes";
 
@@ -50,14 +50,30 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 });
 
 if (!process.env.OPENWEATHERMAP_API_KEY) {
-    console.log("No OpenWeatherMap API key env variable set, did you source setup_env.sh?");
+    console.error("No OpenWeatherMap API key env variable set, did you source setup_env.sh?");
     process.exit(1);
 }
 
 if (!process.env.WORLDTIDES_API_KEY) {
-    console.log("No World Tides API key env variable set, did you source setup_env.sh?");
+    console.error("No World Tides API key env variable set, did you source setup_env.sh?");
     process.exit(1);
 }
+
+// Make sure we actually have the proper firmware binary that we say we can serve to ota reqs
+const versionFile                        = fs.readFileSync(versionFilepath + "/current_version.txt", "utf-8")
+const currentVersionNumberStrs: string[] = versionFile.toString().trim().split(".");
+const currentBinaryPath                  = `${versionFilepath}/spot-check-firmware-${currentVersionNumberStrs[0]}-${
+    currentVersionNumberStrs[1]}-${currentVersionNumberStrs[2]}.bin`;
+try {
+    fs.accessSync(currentBinaryPath);
+} catch (e) {
+    console.error(e);
+    console.error(`Firmware version in current_version.txt is ${
+        versionFile.toString().trim()} but firmware binary file ${currentBinaryPath}, not found, fatal error!`);
+    process.exit(1);
+}
+
+console.log(`Successfully found binary '${currentBinaryPath}' matching current version file, OTA can run properly!`);
 
 // HTTPS certs
 let creds = {};
