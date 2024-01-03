@@ -54,6 +54,11 @@ if (!process.env.OPENWEATHERMAP_API_KEY) {
     process.exit(1);
 }
 
+if (!process.env.WORLDTIDES_API_KEY) {
+    console.log("No World Tides API key env variable set, did you source setup_env.sh?");
+    process.exit(1);
+}
+
 // HTTPS certs
 let creds = {};
 if (process.env.DEPLOY_STAGE === "PROD") {
