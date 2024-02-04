@@ -6,10 +6,13 @@ import fetch from "node-fetch";
 import path from "path";
 
 import {
+    defaultCustomScreenTestImage,
     defaultOWMWindErrorChartFilepath,
     defaultPlotlyErrorSwellChartFilepath,
     defaultPlotlyErrorTideChartFilepath,
     defaultPlotlyErrorWindChartFilepath,
+    // TODO :: remove
+    defaultRendersDir,
     defaultSurflineSwellErrorChartFilepath,
     defaultWorldTidesTideErrorChartFilepath,
     degreesToDirStr,
@@ -42,16 +45,24 @@ export default function(): express.Router {
             return res.status(400).send();
         }
 
-        let currentTideObj: CurrentTide = {height : 0, rising : false};
+        let tidesRes = null;
         try {
             // TODO :: get correct date depending on user's utc offset, or maybe just the spot's utc offset
-            const tidesRes = await worldTidesHelper.getTides(latitude, longitude);
-            currentTideObj = getCurrentTideHeight(tidesRes.heights);
+            tidesRes = await worldTidesHelper.getTides(latitude, longitude);
         } catch (err) {
-            // World Tides request failed for some reason (straight request, no parsing done), return placeholder image
+            // World Tides request failed for some reason (straight request, no parsing done), return placeholder
+            // image
             const errCast = err as Error;
             console.error(`Request to World Tides API failed, sending conditions object with fake data - ${
                 errCast.name}: ${errCast.message}`);
+        }
+
+        let currentTideObj: CurrentTide = {height : -99, rising : false};
+        if (!tidesRes || !tidesRes.heights || tidesRes.heights.length == 0) {
+            console.error(
+                `Request to world tides API succeeded but response has no 'heights' propery or a length of zero, returning succes code w/ error condition vals. CHECK WORLDTIDES API CREDIT COUNT!`);
+        } else {
+            currentTideObj = getCurrentTideHeight(tidesRes!.heights);
         }
 
         let weatherResponse: Weather = {temperature : 0, wind : {speed : 0, deg : 0}};
@@ -124,10 +135,22 @@ export default function(): express.Router {
             tidesRes = await worldTidesHelper.getTides(latitude, longitude);
         } catch (err) {
             const errCast = err as Error;
-            // World Tides API request failed for some reason (straight request, no parsing done), return placeholder
-            // image
+            // World Tides API request failed for some reason (straight request, no parsing done), return
+            // placeholder image
             console.error(`Request to world tides API failed, returning succes code w/ error text placeholder chart - ${
                 errCast.name}: ${errCast.message}`);
+            return res.download(defaultWorldTidesTideErrorChartFilepath, "world_tides_tide_err.raw", (downloadErr) => {
+                if (downloadErr) {
+                    console.error(`Error in response download for default world tides tide err chart: ${downloadErr}`);
+                }
+            });
+        }
+
+        // Make sure we actually got back correct data (this will catch the case of API credits running out for
+        // worldtides api)
+        if (!tidesRes || !tidesRes.heights || tidesRes.heights.length == 0) {
+            console.error(
+                `Request to world tides API succeeded but response has no 'heights' propery or a length of zero, returning succes code w/ error text placeholder chart. CHECK WORLDTIDES API CREDIT COUNT!`);
             return res.download(defaultWorldTidesTideErrorChartFilepath, "world_tides_tide_err.raw", (downloadErr) => {
                 if (downloadErr) {
                     console.error(`Error in response download for default world tides tide err chart: ${downloadErr}`);
@@ -437,6 +460,20 @@ export default function(): express.Router {
             */
         });
     });
+
+    router.get("/custom_screen_test_image",
+               async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+                   // TODO :: remove
+                   const rawPath = await render.convertImageToRawPacked(
+                       defaultRendersDir + "/default_custom_screen_test_image.jpeg",
+                       800,
+                       600);
+                   return res.download(defaultCustomScreenTestImage, "custom_screen_test_image.raw", (downloadErr) => {
+                       if (downloadErr) {
+                           console.error(`Error in response download for custom screen test image: ${downloadErr}`);
+                       }
+                   });
+               });
 
     router.get("/test_error",
                async (req: express.Request,

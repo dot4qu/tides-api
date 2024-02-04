@@ -32,8 +32,10 @@ function convert24BitTo8Bit(r: number, b: number, g: number): number {
     return output;
 }
 
-// Convert a buffer of 8-bit rgb values (see convert24BitTo8Bit) to a two-pixels-per-byte buffer of only 0x00 and 0xFF
-// pixels
+/*
+ * Convert a buffer of 8-bit rgb values (see convert24BitTo8Bit) to a two-pixels-per-byte buffer of only 0x00 and 0xFF
+ * pixels
+ */
 function toPackedBlackAndWhite(rawBuffer: Buffer): Buffer {
     let r: number          = 0;
     let b: number          = 0;
@@ -73,8 +75,9 @@ function toPackedBlackAndWhite(rawBuffer: Buffer): Buffer {
  * Create canvas and burn plotly-gen'd image (tested both jpeg and svg) to it in order to convert it to raw RGB bytes,
  * then pack and B&W the bytes for delivery to device
  */
-async function convertImageToRawPacked(imageFilePath: string): Promise<string> {
-    const chartCanvas    = createCanvas(700, 200);
+// TODO :: remove export
+export async function convertImageToRawPacked(imageFilePath: string, width: number, height: number): Promise<string> {
+    const chartCanvas    = createCanvas(width, height);
     const chartContext   = chartCanvas.getContext("2d");
     const tideChartImage = await loadImage(imageFilePath);
     chartContext.drawImage(tideChartImage, 0, 0);
@@ -197,7 +200,7 @@ export async function renderTideChart(filename: string,
     const filepath = `${__dirname}/../${rendersDir}/${filename}`;
     await generateChartFromData(data, layout, imgOptions, filepath);
 
-    return await convertImageToRawPacked(filepath);
+    return await convertImageToRawPacked(filepath, 700, 200);
 }
 
 export async function renderSwellChart(filename: string,
@@ -290,7 +293,7 @@ export async function renderSwellChart(filename: string,
     const filepath = `${__dirname}/../${rendersDir}/${filename}`;
     await generateChartFromData(data, layout, imgOptions, filepath);
 
-    return await convertImageToRawPacked(filepath);
+    return await convertImageToRawPacked(filepath, 700, 200);
 }
 
 export async function renderWindChart(filename: string,
@@ -362,5 +365,5 @@ export async function renderWindChart(filename: string,
     const filepath = `${__dirname}/../${rendersDir}/${filename}`;
     await generateChartFromData(data, layout, imgOptions, filepath);
 
-    return await convertImageToRawPacked(filepath);
+    return await convertImageToRawPacked(filepath, 700, 200);
 }

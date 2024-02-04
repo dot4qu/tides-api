@@ -5,6 +5,10 @@ export const MONTHS = [ "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", 
 export const rendersDir: string        = "temp_renders";
 export const defaultRendersDir: string = "default_renders";
 export const versionFilepath           = "./fw_versions";
+
+/*
+ * Error charts
+ */
 export const defaultWorldTidesTideErrorChartFilepath =
     path.join(defaultRendersDir, "default_worldtides_tide_error_chart.raw");
 export const defaultSurflineSwellErrorChartFilepath =
@@ -14,6 +18,11 @@ export const defaultPlotlyErrorTideChartFilepath = path.join(defaultRendersDir, 
 export const defaultPlotlyErrorSwellChartFilepath =
     path.join(defaultRendersDir, "default_plotly_error_swell_chart.raw");
 export const defaultPlotlyErrorWindChartFilepath = path.join(defaultRendersDir, "default_plotly_error_wind_chart.raw");
+
+/*
+ * Custom screen test image
+ */
+export const defaultCustomScreenTestImage = path.join(defaultRendersDir, "default_custom_screen_test_image.raw");
 
 export enum SpotCheckRevision {
     Rev2,
@@ -77,7 +86,7 @@ export function getCurrentTideHeight(tidesResponse: WorldTidesHeight[]): Current
 
     let tideHeight: number  = 0;
     let tideRising: boolean = false;
-    if (tidesResponse.length > 0) {
+    if (tidesResponse.length && tidesResponse.length > 0) {
         try {
             const matchingTimes = tidesResponse.filter(x => x.dt === now);
             if (matchingTimes.length > 0) {
@@ -107,6 +116,8 @@ export function getCurrentTideHeight(tidesResponse: WorldTidesHeight[]): Current
             tideRising = false;
         }
     } else {
+        console.error(
+            "Tides array passed to getCurrentTideHeight with either no 'length' property or one with a length of zero. Sending default error values for conditions.");
         tideHeight = -99;
         tideRising = false;
     }
