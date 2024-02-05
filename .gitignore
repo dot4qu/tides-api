@@ -17,4 +17,7 @@ setup_env.sh
 *.png
 *.raw
 
+# ignore the above image extension wildcards for images in the default_renders dir, those should always be checked in
+!default_renders/*
+
 temp_renders/
