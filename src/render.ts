@@ -92,12 +92,13 @@ export async function convertImageToRawPacked(imageFilePath: string, width: numb
 }
 
 /*
- * Bundles data and calls into the created plotly instance to generate an SVG chart
+ * Bundles data and calls into the created plotly instance to generate an SVG chart.
+ * Internal to render.ts but exported so scripts can access.
  */
-async function generateChartFromData(data: Plotly.Data[],
-                                     layout: Partial<Plotly.Layout>,
-                                     imgOptions: Plotly.ToImgopts,
-                                     filename: string) {
+export async function generateChartFromData(data: Plotly.Data[],
+                                            layout: Partial<Plotly.Layout>,
+                                            imgOptions: Plotly.ToImgopts,
+                                            filename: string) {
     let svgData = null;
     try {
         const plotly = await plotlyHelper.loadPlotly();
@@ -299,8 +300,6 @@ export async function renderSwellChart(filename: string,
 export async function renderWindChart(filename: string,
                                       xValues: number[],
                                       yValues: number[],
-                                      // tick0: number,
-                                      // xAxisTitle: string,
                                       width: number,
                                       height: number): Promise<string> {
     let windTrace: Plotly.Data = {
