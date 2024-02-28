@@ -17,7 +17,6 @@ export const defaultOWMWindErrorChartFilepath    = path.join(defaultRendersDir, 
 export const defaultPlotlyErrorTideChartFilepath = path.join(defaultRendersDir, "default_plotly_error_tide_chart.raw");
 export const defaultPlotlyErrorSwellChartFilepath =
     path.join(defaultRendersDir, "default_plotly_error_swell_chart.raw");
-export const defaultPlotlyErrorWindChartFilepath = path.join(defaultRendersDir, "default_plotly_error_wind_chart.raw");
 
 /*
  * Custom screen test image

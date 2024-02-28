@@ -330,7 +330,7 @@ export async function renderWindChart(filename: string,
             },
             type : "category",  // Necessary to prevent plotly from reording x axis order to start with lowest int
             title : {
-                text : `<b>Windspeed (mph)</b>`,
+                text : `<b>Hour</b>`,
                 font : {
                     size : 18,
                     color : "black",
@@ -344,6 +344,13 @@ export async function renderWindChart(filename: string,
             tickfont : {
                 size : 18,
                 color : "black",
+            },
+            title : {
+                text : `<b>Windspeed (mph)</b>`,
+                font : {
+                    size : 18,
+                    color : "black",
+                },
             },
         },
         // Removes all of the padding while keeping the axis labels if around their default distance

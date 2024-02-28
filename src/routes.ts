@@ -10,7 +10,6 @@ import {
     defaultOWMWindErrorChartFilepath,
     defaultPlotlyErrorSwellChartFilepath,
     defaultPlotlyErrorTideChartFilepath,
-    defaultPlotlyErrorWindChartFilepath,
     // TODO :: remove
     defaultRendersDir,
     defaultSurflineSwellErrorChartFilepath,
@@ -430,7 +429,7 @@ export default function(): express.Router {
             // Plotly render func failed for some reason, return placeholder image
             console.error(`Request to plotly failed, returning succes code w/ error text placeholder chart - ${
                 errCast.name}: ${errCast.message}`);
-            return res.download(defaultPlotlyErrorWindChartFilepath, "chart_render_wind_err.raw", (downloadErr) => {
+            return res.download(defaultOWMWindErrorChartFilepath, "chart_render_wind_err.raw", (downloadErr) => {
                 if (downloadErr) {
                     console.error(`Error in response download for default plotly wind err chart: ${downloadErr}`);
                 }
@@ -442,7 +441,6 @@ export default function(): express.Router {
                 console.error(`Error in response download for wind chart: ${err}`);
             }
 
-            /*
             // Delete human-viewable svg by joining original svg filename with the known path to the renders dir
             fs.unlink(path.join(rendersDir, windChartFilename), (err) => {
                 if (err) {
@@ -457,7 +455,6 @@ export default function(): express.Router {
                     console.error(`Error erasing image ${windChartFilename} after sending, non-fatal`)
                 }
             });
-            */
         });
     });
 
