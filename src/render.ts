@@ -166,7 +166,9 @@ export async function renderTideChart(filename: string,
             },
         },
         yaxis : {
-            showgrid : false,
+            showgrid : true,
+            gridcolor : "black",  // default gray is nice subtle, but doesn't render on device
+            griddash : "dash",
             color : "black",
             showline : true,
             zeroline : true,
@@ -221,7 +223,7 @@ export async function renderSwellChart(filename: string,
         name : "Max height",
         type : "bar",
         marker : {
-            color : "rgba(0, 0, 0, 0.6)",
+            color : "rgba(96, 96, 96, 1.0)",  // gray instead of adjusting alpha because then gridlines render in front
         },
     };
 
@@ -262,7 +264,9 @@ export async function renderSwellChart(filename: string,
             tickfont : {size : 18, color : "black"},
         },
         yaxis : {
-            showgrid : false,
+            showgrid : true,
+            gridcolor : "black",  // default gray is nice subtle, but doesn't render on device
+            griddash : "dash",
             zeroline : false,
             showline : true,
             color : "black",
@@ -348,6 +352,8 @@ export async function renderWindChart(filename: string,
             tickprefix : "<b>",
             ticksuffix : "</b>",
             showgrid : true,
+            gridcolor : "black",  // default gray is nice subtle, but doesn't render on device
+            griddash : "dash",
             showline : true,
             tickfont : {size : 18, color : "black"},
             title : {
