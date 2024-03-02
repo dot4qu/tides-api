@@ -163,8 +163,9 @@ export async function renderTideChart(filename: string,
             title : {
                 text : `<b>${xAxisTitle}</b>`,
                 font : {size : 18, color : "black"},
-                standoff : height,  // Distance in px between top of chart title and bottom of this axis title text. By
-                                    // setting full height, it sets this text along the bottom of the render
+                standoff : height - 20,  // Distance in px between top of chart title and bottom of this axis title
+                                         // text. By setting full height - small padding, it sets this text along the
+                                         // bottom of the render but up a bit to prevent cut off letters below baseline
             },
         },
         yaxis : {
@@ -196,7 +197,7 @@ export async function renderTideChart(filename: string,
             r : 0,   // Distance between furthest right edge of chart and maximum width of render. Zero this so chart
                      // fills all remaining X distance, we don't care that it will be a little unbalanced because of the
                      // axis title on the left side
-            b : 35,  // Distance between literal axis line and the maximum height of render. Leaves room for axis
+            b : 45,  // Distance between literal axis line and the maximum height of render. Leaves room for axis
                      // numbers
         },
     };
