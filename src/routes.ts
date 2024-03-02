@@ -402,21 +402,22 @@ export default function(): express.Router {
         const rawWind: OpenWeatherMapForecastObject[] = [ rawForecast.current ].concat(forecastWithoutNow);
 
         // Switch timestamps received from server to moment objects. Epoch is timezone/offset-agnostic, so
-        // instantiate as UTC. Use utcOffset func to shift date to user's utc offset (returned in overall forecast
-        // response) to correctly interpret day of year so we know which raw wind objects to filter before burning
-        // into chart. Response offset is in seconds, multiply up to hours for moment function
-        const windWithResponseOffset = rawWind.map(
-            x => ({
-                ...x,
-                timestamp : moment.utc(((x.dt as number) * 1000)).utcOffset(rawForecast.timezone_offset * 60 * 60),
-            }));
+        // instantiate as UTC. Don't do any timezone fuckery yet, that waits until after we do our filtering based on
+        // 'now' which is also referenced to UTC.
+        const windWithResponseOffset = rawWind.map(x => ({
+                                                       ...x,
+                                                       timestamp : moment.utc(((x.dt as number) * 1000)),
+                                                   }));
 
-        // TODO :: filter these to just 24 hours (I think the api does that but we should do it anyway)
-        // Convert to local first using the utc offset returned from OWM for the requested longitude
-        const nowLocal          = windWithResponseOffset[0].timestamp.local();
-        const tomorrowLocal     = nowLocal.add(24, "hours");
-        const xValues: number[] = windWithResponseOffset.map(x => x.timestamp.local())
-                                      .filter(x => x < tomorrowLocal)
+        // Get 'tomorrow' from the first item in the response rather than instantiating ourselves so everything is
+        // properly referenced to start time of response
+        const tomorrow = windWithResponseOffset[0].timestamp.add(24, "hours");
+
+        // Now is when we use the spot's UTC offset returned in the response to offset the times by calling utcOffset on
+        // the moment object.  This means that the chart X values will be in local time to the spot location.
+        // Response offset is in seconds, multiply up to hours for moment function.
+        const xValues: number[] = windWithResponseOffset.filter(x => x.timestamp < tomorrow)
+                                      .map(x => x.timestamp.utcOffset(rawForecast.timezone_offset / 60 / 60))
                                       .map(x => x.hour() + x.minute() / 60);
         const yValues = windWithResponseOffset.map(x => x.wind_speed);
 
