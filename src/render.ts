@@ -143,6 +143,11 @@ export async function renderTideChart(filename: string,
         title : {
             text : "<b>Tide Chart</b>",
             font : {size : 20, color : "black"},
+            xref : "container",
+            yref : "container",
+            xanchor : "center",
+            yanchor : "top",  // Text top capline will be at y
+            y : 0.98,         // 0.0 (bottom) to 1.0 (top)
         },
         xaxis : {
             tickprefix : "<b>",
@@ -152,16 +157,12 @@ export async function renderTideChart(filename: string,
             showline : true,
             zeroline : true,
             color : "black",
-            tickfont : {
-                size : 18,
-                color : "black",
-            },
+            tickfont : {size : 18, color : "black"},
             title : {
                 text : `<b>${xAxisTitle}</b>`,
-                font : {
-                    size : 18,
-                    color : "black",
-                },
+                font : {size : 18, color : "black"},
+                standoff : height,  // Distance in px between top of chart title and bottom of this axis title text. By
+                                    // setting full height, it sets this text along the bottom of the render
             },
         },
         yaxis : {
@@ -171,10 +172,7 @@ export async function renderTideChart(filename: string,
             zeroline : true,
             tickprefix : "<b>",
             ticksuffix : "</b>",
-            tickfont : {
-                size : 18,
-                color : "black",
-            },
+            tickfont : {size : 18, color : "black"},
             title : {
                 text : "<b>Height (m)</b>",
                 font : {
@@ -183,12 +181,19 @@ export async function renderTideChart(filename: string,
                 },
             },
         },
-        // Removes all of the padding while keeping the axis labels if around their default distance
+        // Decrease all of the default padding while keeping title and axis labels visible and non-overlapping
         margin : {
-            l : 55,
-            t : 40,
-            r : 30,
-            b : 50,
+            pad : 0,  // Distance between axis numbers and literal axis line
+            l : 65,   // Distance between literal axis line and the 0 X line of render. Cannot for the life of me get
+                      // standoff working for this axis title, so we're stuck with default distance from axis title to
+                      // chart
+            t : 20,  // Distance between top of chart and 0 Y line of render. Chart title moves independent of this when
+                     // yanchor != auto!
+            r : 0,   // Distance between furthest right edge of chart and maximum width of render. Zero this so chart
+                     // fills all remaining X distance, we don't care that it will be a little unbalanced because of the
+                     // axis title on the left side
+            b : 35,  // Distance between literal axis line and the maximum height of render. Leaves room for axis
+                     // numbers
         },
     };
 
@@ -240,10 +245,12 @@ export async function renderSwellChart(filename: string,
         barmode : "overlay",
         title : {
             text : "<b>Swell Chart</b>",
-            font : {
-                size : 20,
-                color : "black",
-            },
+            font : {size : 20, color : "black"},
+            xref : "container",
+            yref : "container",
+            xanchor : "center",
+            yanchor : "top",  // Text top capline will be at y
+            y : 0.98,         // 0.0 (bottom) to 1.0 (top)
         },
         xaxis : {
             ticks : "",
@@ -252,10 +259,7 @@ export async function renderSwellChart(filename: string,
             showgrid : false,
             showline : true,
             color : "black",
-            tickfont : {
-                size : 18,
-                color : "black",
-            },
+            tickfont : {size : 18, color : "black"},
         },
         yaxis : {
             showgrid : false,
@@ -264,24 +268,25 @@ export async function renderSwellChart(filename: string,
             color : "black",
             tickprefix : "<b>",
             ticksuffix : "</b>",
-            tickfont : {
-                size : 18,
-                color : "black",
-            },
+            tickfont : {size : 18, color : "black"},
             title : {
                 text : "<b>Height (m)</b>",
-                font : {
-                    size : 18,
-                    color : "black",
-                },
+                font : {size : 18, color : "black"},
             },
         },
-        // Removes all of the padding while keeping the axis labels if around their default distance
+        // Decrease all of the default padding while keeping title and axis labels visible and non-overlapping
         margin : {
-            l : 55,
-            t : 40,
-            r : 30,
-            b : 30,
+            pad : 0,  // Distance between axis numbers and literal axis line
+            l : 65,   // Distance between literal axis line and the 0 X line of render. Cannot for the life of me get
+                      // standoff working for this axis title, so we're stuck with default distance from axis title to
+                      // chart
+            t : 20,  // Distance between top of chart and 0 Y line of render. Chart title moves independent of this when
+                     // yanchor != auto!
+            r : 0,   // Distance between furthest right edge of chart and maximum width of render. Zero this so chart
+                     // fills all remaining X distance, we don't care that it will be a little unbalanced because of the
+                     // axis title on the left side
+            b : 35,  // Distance between literal axis line and the maximum height of render. Leaves room for axis
+                     // numbers
         },
     };
 
@@ -318,47 +323,51 @@ export async function renderWindChart(filename: string,
         title : {
             text : "<b>Wind Chart</b>",
             font : {size : 20, color : "black"},
+            xref : "container",
+            yref : "container",
+            xanchor : "center",
+            yanchor : "top",  // Text top capline will be at y
+            y : 0.98,         // 0.0 (bottom) to 1.0 (top)
         },
         xaxis : {
             tickprefix : "<b>",
             ticksuffix : "</b>",
             dtick : 4.0,
             color : "black",
-            tickfont : {
-                size : 18,
-                color : "black",
-            },
+            tickfont : {size : 18, color : "black"},
             type : "category",  // Necessary to prevent plotly from reording x axis order to start with lowest int
             title : {
                 text : `<b>Hour</b>`,
-                font : {
-                    size : 18,
-                    color : "black",
-                },
+                font : {size : 18, color : "black"},
+                standoff : height,  // Distance in px between top of chart title and bottom of this axis title text. By
+                                    // setting full height, it sets this text along the bottom of the render
             },
         },
         yaxis : {
             color : "black",
             tickprefix : "<b>",
             ticksuffix : "</b>",
-            tickfont : {
-                size : 18,
-                color : "black",
-            },
+            showgrid : true,
+            showline : true,
+            tickfont : {size : 18, color : "black"},
             title : {
                 text : `<b>Windspeed (mph)</b>`,
-                font : {
-                    size : 18,
-                    color : "black",
-                },
+                font : {size : 18, color : "black"},
             },
         },
-        // Removes all of the padding while keeping the axis labels if around their default distance
+        // Decrease all of the default padding while keeping title and axis labels visible and non-overlapping
         margin : {
-            l : 55,
-            t : 40,
-            r : 30,
-            b : 50,
+            pad : 0,  // Distance between axis numbers and literal axis line
+            l : 65,   // Distance between literal axis line and the 0 X line of render. Cannot for the life of me get
+                      // standoff working for this axis title, so we're stuck with default distance from axis title to
+                      // chart
+            t : 20,  // Distance between top of chart and 0 Y line of render. Chart title moves independent of this when
+                     // yanchor != auto!
+            r : 0,   // Distance between furthest right edge of chart and maximum width of render. Zero this so chart
+                     // fills all remaining X distance, we don't care that it will be a little unbalanced because of the
+                     // axis title on the left side
+            b : 35,  // Distance between literal axis line and the maximum height of render. Leaves room for axis
+                     // numbers
         },
     };
 
