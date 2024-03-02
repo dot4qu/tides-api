@@ -194,9 +194,9 @@ export async function renderTideChart(filename: string,
                       // chart
             t : 25,  // Distance between top of chart and 0 Y line of render. Chart title moves independent of this when
                      // yanchor != auto!
-            r : 0,   // Distance between furthest right edge of chart and maximum width of render. Zero this so chart
-                     // fills all remaining X distance, we don't care that it will be a little unbalanced because of the
-                     // axis title on the left side
+            r : 25,  // Distance between furthest right edge of chart and maximum width of render. We're not lacking in
+                     // horizontal space, so restrict this 25 to line up nicely with the furthest of the conditions text
+                     // all in one vertical line
             b : 45,  // Distance between literal axis line and the maximum height of render. Leaves room for axis
                      // numbers
         },
@@ -289,9 +289,9 @@ export async function renderSwellChart(filename: string,
                       // chart
             t : 25,  // Distance between top of chart and 0 Y line of render. Chart title moves independent of this when
                      // yanchor != auto!
-            r : 0,   // Distance between furthest right edge of chart and maximum width of render. Zero this so chart
-                     // fills all remaining X distance, we don't care that it will be a little unbalanced because of the
-                     // axis title on the left side
+            r : 25,  // Distance between furthest right edge of chart and maximum width of render. We're not lacking in
+                     // horizontal space, so restrict this 25 to line up nicely with the furthest of the conditions text
+                     // all in one vertical line
             b : 35,  // Distance between literal axis line and the maximum height of render. Leaves room for axis
                      // numbers
         },
@@ -372,9 +372,9 @@ export async function renderWindChart(filename: string,
                       // chart
             t : 25,  // Distance between top of chart and 0 Y line of render. Chart title moves independent of this when
                      // yanchor != auto!
-            r : 0,   // Distance between furthest right edge of chart and maximum width of render. Zero this so chart
-                     // fills all remaining X distance, we don't care that it will be a little unbalanced because of the
-                     // axis title on the left side
+            r : 25,  // Distance between furthest right edge of chart and maximum width of render. We're not lacking in
+                     // horizontal space, so restrict this 25 to line up nicely with the furthest of the conditions text
+                     // all in one vertical line
             b : 35,  // Distance between literal axis line and the maximum height of render. Leaves room for axis
                      // numbers
         },
