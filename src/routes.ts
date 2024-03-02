@@ -87,6 +87,7 @@ export default function(): express.Router {
                 wind_speed : weatherResponse.wind.speed,
                 wind_dir : windDirStr,
                 tide_height : currentTideObj.height.toString(),
+                is_rising : currentTideObj.rising,
             }
         };
 
