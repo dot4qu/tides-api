@@ -154,6 +154,8 @@ export async function renderTideChart(filename: string,
             ticksuffix : "</b>",
             dtick : 4.0,
             showgrid : true,
+            gridcolor : "black",  // default gray is nice subtle, but doesn't render on device
+            griddash : "dash",
             showline : true,
             zeroline : true,
             color : "black",
