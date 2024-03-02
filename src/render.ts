@@ -187,7 +187,7 @@ export async function renderTideChart(filename: string,
             l : 65,   // Distance between literal axis line and the 0 X line of render. Cannot for the life of me get
                       // standoff working for this axis title, so we're stuck with default distance from axis title to
                       // chart
-            t : 20,  // Distance between top of chart and 0 Y line of render. Chart title moves independent of this when
+            t : 25,  // Distance between top of chart and 0 Y line of render. Chart title moves independent of this when
                      // yanchor != auto!
             r : 0,   // Distance between furthest right edge of chart and maximum width of render. Zero this so chart
                      // fills all remaining X distance, we don't care that it will be a little unbalanced because of the
@@ -280,7 +280,7 @@ export async function renderSwellChart(filename: string,
             l : 65,   // Distance between literal axis line and the 0 X line of render. Cannot for the life of me get
                       // standoff working for this axis title, so we're stuck with default distance from axis title to
                       // chart
-            t : 20,  // Distance between top of chart and 0 Y line of render. Chart title moves independent of this when
+            t : 25,  // Distance between top of chart and 0 Y line of render. Chart title moves independent of this when
                      // yanchor != auto!
             r : 0,   // Distance between furthest right edge of chart and maximum width of render. Zero this so chart
                      // fills all remaining X distance, we don't care that it will be a little unbalanced because of the
@@ -361,7 +361,7 @@ export async function renderWindChart(filename: string,
             l : 65,   // Distance between literal axis line and the 0 X line of render. Cannot for the life of me get
                       // standoff working for this axis title, so we're stuck with default distance from axis title to
                       // chart
-            t : 20,  // Distance between top of chart and 0 Y line of render. Chart title moves independent of this when
+            t : 25,  // Distance between top of chart and 0 Y line of render. Chart title moves independent of this when
                      // yanchor != auto!
             r : 0,   // Distance between furthest right edge of chart and maximum width of render. Zero this so chart
                      // fills all remaining X distance, we don't care that it will be a little unbalanced because of the
